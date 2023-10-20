@@ -1,10 +1,13 @@
-
 #version 330 core
 
-in vec3 passColorAttribute;
-out vec4 fragmentColor;
+uniform mat4 transform;		
+uniform mat4 projectionTransform;		
+layout (location = 0) in vec3 positionAttribute;
+uniform vec3 colorAttribute;
+out vec3 passColorAttribute;
 
 void main()
 {
-    fragmentColor = vec4(passColorAttribute, 1.0);
-}
+	gl_Position = projectionTransform * transform * vec4(positionAttribute, 1.0);
+	passColorAttribute = colorAttribute;
+};
