@@ -75,6 +75,7 @@ public:
 		TR = glm::mat4(1.0f);
 		basket = true;
 		state = 4;
+		dir = 1;
 	}
 	GLvoid re_init() {
 		delete_plane = false;
@@ -213,7 +214,19 @@ public:
 
 	GLvoid update() {
 		if (basket) {
-			x_move += 0.01;
+			if (dir >= 1 && p[1][0] + x_move >= 0.9) {
+				dir = -1;
+			}
+			else if (dir <= -1 && p[0][0] + x_move <= -0.9) {
+				dir = 1;
+			}
+
+			if (dir >= 1) {
+				x_move += 0.05;
+			}
+			else {
+				x_move -= 0.05;
+			}
 		}
 		else {
 			y_move -= 0.1;
