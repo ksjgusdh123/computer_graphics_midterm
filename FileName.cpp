@@ -46,12 +46,16 @@ class PLANE {
 	float x_move;
 	float y_move;
 	float x_pos;
+	float y_pos;
 
 	int dir;
 	int state;
 
+	bool delete_plane;
+
 public:
 	GLvoid re_init() {
+		delete_plane = false;
 		TR = glm::mat4(1.0f);
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
@@ -74,6 +78,7 @@ public:
 			p[1][1] = p[0][1];
 			p[2][0] = p[0][0] + 0.2;
 			p[2][1] = p[0][1] + 0.2;
+			y_pos = p[2][1];
 			for (int i = 3; i < 6; ++i) {
 				for (int j = 0; j < 3; ++j) {
 					p[i][j] = p[2][j];
@@ -87,6 +92,7 @@ public:
 			p[2][1] = p[0][1] + 0.2;
 			p[3][0] = p[0][0] - 0.2;
 			p[3][1] = p[0][1] + 0.2;
+			y_pos = p[2][1];
 			for (int i = 4; i < 6; ++i) {
 				for (int j = 0; j < 3; ++j) {
 					p[i][j] = p[3][j];
@@ -102,6 +108,7 @@ public:
 			p[3][1] = p[0][1] - 0.1;
 			p[4][0] = p[0][0] + 0.3;
 			p[4][1] = p[0][1];
+			y_pos = p[2][1];
 			for (int i = 5; i < 6; ++i) {
 				for (int j = 0; j < 3; ++j) {
 					p[i][j] = p[4][j];
@@ -119,6 +126,7 @@ public:
 			p[4][1] = p[0][1] - 0.1;
 			p[5][0] = p[0][0] + 0.23;
 			p[5][1] = p[0][1];
+			y_pos = p[1][1];
 			break;
 		}
 		initBuffer();
@@ -176,31 +184,39 @@ public:
 
 	GLvoid Transform() {
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "transform"); //--- 버텍스 세이더에서모델 변환 위치 가져오기
+		TR = glm::mat4(1.0f);
 		TR = glm::translate(TR, glm::vec3(x_move, y_move, 0.0));
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(TR)); //--- modelTransform 변수에 변환 값 적용하기
 	}
 
 	GLvoid update() {
-		if (x_pos >= 10) {
-			y_move -= 0.01;
+		y_move -= 0.1;
+		y_pos -= 0.1;
+		if (x_pos >= 1) {
 			if (dir > 0) {
-				x_move -= 0.0001;
+				x_move -= 0.05;
 			}
 			else {
-				x_move += 0.0001;
+				x_move += 0.05;
 			}
 		}
 		else {
-			y_move -= 0.01;
 			if (dir > 0) {
-				x_move -= 0.01;
+				x_move -= 0.1;
 			}
 			else {
-				x_move += 0.01;
+				x_move += 0.1;
 			}
-			x_pos += 1;
+			x_pos += 0.1;
 		}
+
+		if (y_pos < -1) {
+			delete_plane = true;
+		}
+		draw();
 	}
+
+	bool get_delete() {return delete_plane;}
 };
 
 
@@ -235,8 +251,11 @@ std::vector<PLANE> manage;
 PLANE p{};
 
 GLvoid Timer_event(int value) {
-	p.re_init();
-	manage.push_back(p);
+	if (manage.size() < 10) {
+		p.re_init();
+		manage.push_back(p);
+		std::cout << manage.size() << std::endl;
+	}
 	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
 	glutTimerFunc(100, Timer_event, 4);
 }
@@ -252,9 +271,15 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	//--- 삼각형 그리기
 
 	for (int i = 0; i < manage.size(); ++i) {
-		manage.at(i).draw();
 		manage.at(i).update();
+		
+		if (manage.at(i).get_delete()) {
+			manage.erase(manage.begin() + i);
+			std::cout << "삭제" << std::endl;
+		}
 	}
+
+
 	glutSwapBuffers(); //--- 화면에 출력하기
 }
 
