@@ -43,18 +43,19 @@ class PLANE {
 	GLuint vbo[2];
 	glm::mat4 TR;
 
-	int dir;
 	float x_move;
 	float y_move;
 
+	int dir;
 	int state;
+
 public:
 	GLvoid re_init() {
 		TR = glm::mat4(1.0f);
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
 		}
-		state = 3;//uid(dre);
+		state = 6;//uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
 		const float START = 1.2;
@@ -79,6 +80,44 @@ public:
 			}
 			break;
 		case 4:
+			p[1][0] = p[0][0] - 0.2;
+			p[1][1] = p[0][1];
+			p[2][0] = p[0][0];
+			p[2][1] = p[0][1] + 0.2;
+			p[3][0] = p[0][0] - 0.2;
+			p[3][1] = p[0][1] + 0.2;
+			for (int i = 4; i < 6; ++i) {
+				for (int j = 0; j < 3; ++j) {
+					p[i][j] = p[3][j];
+				}
+			}
+			break;
+		case 5:
+			p[1][0] = p[0][0] + 0.07;
+			p[1][1] = p[0][1] - 0.1;
+			p[2][0] = p[0][0] + 0.15;
+			p[2][1] = p[0][1] + 0.07;
+			p[3][0] = p[0][0] + 0.23;
+			p[3][1] = p[0][1] - 0.1;
+			p[4][0] = p[0][0] + 0.3;
+			p[4][1] = p[0][1];
+			for (int i = 5; i < 6; ++i) {
+				for (int j = 0; j < 3; ++j) {
+					p[i][j] = p[4][j];
+				}
+			}
+			break;
+		case 6:
+			p[1][0] = p[0][0] + 0.05;
+			p[1][1] = p[0][1] + 0.1;
+			p[2][0] = p[0][0] + 0.05;
+			p[2][1] = p[0][1] - 0.1;
+			p[3][0] = p[0][0] + 0.18;
+			p[3][1] = p[0][1] + 0.1;
+			p[4][0] = p[0][0] + 0.18;
+			p[4][1] = p[0][1] - 0.1;
+			p[5][0] = p[0][0] + 0.23;
+			p[5][1] = p[0][1];
 			break;
 		}
 		initBuffer();
@@ -111,10 +150,13 @@ public:
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 6); // 설정대로 출력
 			break;
 		case 4:
-			glDrawArrays(GL_LINES, 0, 5); // 설정대로 출력
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 6); // 설정대로 출력
 			break;
 		case 5:
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 5); // 설정대로 출력
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 6); // 설정대로 출력
+			break;
+		case 6:
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 6); // 설정대로 출력
 			break;
 		}
 	}
@@ -154,7 +196,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(100, 100);
-	glutInitWindowSize(800, 600);
+	glutInitWindowSize(700, 700);
 	glutCreateWindow("Example1");
 	//--- GLEW 초기화하기
 	glewInit();
