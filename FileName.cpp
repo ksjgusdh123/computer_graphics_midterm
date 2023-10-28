@@ -22,6 +22,8 @@ GLvoid Keyboard(unsigned char key, int x, int y);
 GLvoid Mouse_Move(int x, int y);
 GLvoid Timer_event(int value);
 GLvoid ConvertXY_OPENGL(int x, int y);
+GLvoid re_init();
+GLvoid init();
 // 랜덤 엔진
 std::random_device rd;
 std::mt19937 dre(rd());
@@ -35,7 +37,7 @@ GLint width, height;
 GLuint shaderProgramID; //--- 세이더 프로그램 이름
 GLuint vertexShader; //--- 버텍스 세이더 객체
 GLuint fragmentShader; //--- 프래그먼트 세이더 객체
-GLuint vao;
+GLuint vao, linevbo[2];
 
 class PLANE {
 	GLfloat p[6][3];
@@ -273,6 +275,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glewInit();
 	glewExperimental = GL_TRUE;
 	make_shaderProgram();
+	init();
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 	glutDisplayFunc(drawScene);
@@ -291,6 +294,15 @@ std::vector<PLANE> manage;
 PLANE p{};
 PLANE basket{1};
 int draw_count = 0;
+
+GLfloat line[2][3]{ };
+GLfloat linecolor[3]{ };
+
+float start_x;
+float start_y;
+float end_x;
+float end_y;
+bool click = false;
 
 GLvoid Timer_event(int value) {
 	if (manage.size() == 0) {
@@ -330,31 +342,101 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		}
 	}
 
+	if (click) {
+		int PosLocation = glGetAttribLocation(shaderProgramID, "positionAttribute"); //	: 0  Shader의 'layout (location = 0)' 부분
+		glBindBuffer(GL_ARRAY_BUFFER, linevbo[0]); // VBO Bind
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+		glEnableVertexAttribArray(PosLocation);
+
+		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "transform"); //--- 버텍스 세이더에서모델 변환 위치 가져오기
+		glm::mat4 TR = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(TR));
+
+		unsigned int colorLocation = glGetUniformLocation(shaderProgramID, "colorAttribute");
+		glUniform3fv(colorLocation, 1, linecolor); // 예시 색상
+		glDrawArrays(GL_LINES, 0, 2); // 설정대로 출력
+	}
 
 	glutSwapBuffers(); //--- 화면에 출력하기
 }
+
+GLvoid Mouse_Click(int button, int state, int x, int y) {
+	ConvertXY_OPENGL(x, y);
+	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+		start_x = ox;
+		start_y = oy;
+		end_x = ox;
+		end_y = oy;
+		click = true;
+		line[0][0] = start_x;
+		line[0][1] = start_y;
+	}
+	else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+		click = false;
+		start_x = end_x;
+		start_y = end_y;
+	}
+}
+
+GLvoid Mouse_Move(int x, int y)
+{
+	if (click) {
+		ConvertXY_OPENGL(x, y);
+		end_x = ox;
+		end_y = oy;
+		line[1][0] = end_x;
+		line[1][1] = end_y;
+		re_init();
+	}
+}
+
 
 GLvoid Reshape(int w, int h) //--- 콜백 함수: 다시 그리기 콜백 함수
 {
 	glViewport(0, 0, w, h);
 }
 
-GLvoid Mouse_Click(int button, int state, int x, int y) {
+
+
+GLvoid init() {
+	glBindVertexArray(vao);
+
+	glGenBuffers(2, linevbo);
+	glBindBuffer(GL_ARRAY_BUFFER, linevbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(line), line, GL_STATIC_DRAW);
+
+	GLint lineAttribute = glGetAttribLocation(shaderProgramID, "positionAttribute");
+	glBindBuffer(GL_ARRAY_BUFFER, linevbo[0]);
+	glVertexAttribPointer(lineAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(lineAttribute);
+
+	glBindBuffer(GL_ARRAY_BUFFER, linevbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(linecolor), linecolor, GL_STATIC_DRAW);
+
+	GLint line_Attribute = glGetAttribLocation(shaderProgramID, "colorAttribute");
+	glBindBuffer(GL_ARRAY_BUFFER, linevbo[1]);
+	glVertexAttribPointer(line_Attribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(line_Attribute);
 
 }
 
-GLvoid Mouse_Move(int x, int y)
-{
-	ConvertXY_OPENGL(x, y);
+GLvoid re_init() {
+	glBindBuffer(GL_ARRAY_BUFFER, linevbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(line), line, GL_STATIC_DRAW);
 
-	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
+	GLint lineAttribute = glGetAttribLocation(shaderProgramID, "positionAttribute");
+	glBindBuffer(GL_ARRAY_BUFFER, linevbo[0]);
+	glVertexAttribPointer(lineAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(lineAttribute);
 
+	glBindBuffer(GL_ARRAY_BUFFER, linevbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(linecolor), linecolor, GL_STATIC_DRAW);
 
-
+	GLint line_Attribute = glGetAttribLocation(shaderProgramID, "colorAttribute");
+	glBindBuffer(GL_ARRAY_BUFFER, linevbo[1]);
+	glVertexAttribPointer(line_Attribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(line_Attribute);
 }
-
-
-
 
 
 
@@ -368,8 +450,8 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 
 GLvoid ConvertXY_OPENGL(int x, int y)
 {
-	int w = 800;
-	int h = 600;
+	int w = 700;
+	int h = 700;
 
 	ox = (float)(x - (float)w / 2.0) * (float)(1.0 / (float)(w / 2.0));
 	oy = -(float)(y - (float)h / 2.0) * (float)(1.0 / (float)(h / 2.0));
