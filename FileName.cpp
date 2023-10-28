@@ -25,7 +25,7 @@ GLvoid ConvertXY_OPENGL(int x, int y);
 // ·£´ý ¿£Áø
 std::random_device rd;
 std::mt19937 dre(rd());
-std::uniform_real_distribution<float> urd{ -1, 1 };
+std::uniform_real_distribution<float> urd{ 0.4, 1 };
 std::uniform_real_distribution<float> urd_color{ 0.1, 1 };
 std::uniform_int_distribution<int> uid{ 3, 6 };
 
@@ -45,6 +45,7 @@ class PLANE {
 
 	float x_move;
 	float y_move;
+	float x_pos;
 
 	int dir;
 	int state;
@@ -55,7 +56,7 @@ public:
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
 		}
-		state = 6;//uid(dre);
+		state = uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
 		const float START = 1.2;
@@ -180,11 +181,25 @@ public:
 	}
 
 	GLvoid update() {
-		y_move -= 0.01;
-		if (dir > 0)
-			x_move -= 0.01;
-		else
-			x_move += 0.01;
+		if (x_pos >= 10) {
+			y_move -= 0.01;
+			if (dir > 0) {
+				x_move -= 0.0001;
+			}
+			else {
+				x_move += 0.0001;
+			}
+		}
+		else {
+			y_move -= 0.01;
+			if (dir > 0) {
+				x_move -= 0.01;
+			}
+			else {
+				x_move += 0.01;
+			}
+			x_pos += 1;
+		}
 	}
 };
 
