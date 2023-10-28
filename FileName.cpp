@@ -52,8 +52,30 @@ class PLANE {
 	int state;
 
 	bool delete_plane;
-
+	bool basket;
 public:
+	PLANE() {}
+	PLANE(int i) {
+		p[0][0] = -0.3;
+		p[0][1] = -0.8;
+		p[1][0] = 0.3;
+		p[1][1] = -0.8;
+		p[2][0] = -0.3;
+		p[2][1] = -0.7;
+		p[3][0] = 0.3;
+		p[3][1] = -0.7;
+		for (int i = 4; i < 6; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				p[i][j] = p[3][j];
+			}
+		}
+		color[0] = 1;
+		color[1] = 0;
+		color[2] = 0;
+		TR = glm::mat4(1.0f);
+		basket = true;
+		state = 4;
+	}
 	GLvoid re_init() {
 		delete_plane = false;
 		TR = glm::mat4(1.0f);
@@ -190,28 +212,33 @@ public:
 	}
 
 	GLvoid update() {
-		y_move -= 0.1;
-		y_pos -= 0.1;
-		if (x_pos >= 1) {
-			if (dir > 0) {
-				x_move -= 0.05;
-			}
-			else {
-				x_move += 0.05;
-			}
+		if (basket) {
+			x_move += 0.01;
 		}
 		else {
-			if (dir > 0) {
-				x_move -= 0.1;
+			y_move -= 0.1;
+			y_pos -= 0.1;
+			if (x_pos >= 1) {
+				if (dir > 0) {
+					x_move -= 0.05;
+				}
+				else {
+					x_move += 0.05;
+				}
 			}
 			else {
-				x_move += 0.1;
+				if (dir > 0) {
+					x_move -= 0.1;
+				}
+				else {
+					x_move += 0.1;
+				}
+				x_pos += 0.1;
 			}
-			x_pos += 0.1;
-		}
 
-		if (y_pos < -1) {
-			delete_plane = true;
+			if (y_pos < -1) {
+				delete_plane = true;
+			}
 		}
 		draw();
 	}
@@ -249,14 +276,22 @@ GLfloat rColor = 0.50, gColor = 0.50, bColor = 1.0;
 float ox, oy;
 std::vector<PLANE> manage;
 PLANE p{};
+PLANE basket{1};
 int draw_count = 0;
+
 GLvoid Timer_event(int value) {
-	if (draw_count >= 10) {
-		draw_count = 0;
-		if (manage.size() < 10) {
-			p.re_init();
-			manage.push_back(p);
-			std::cout << manage.size() << std::endl;
+	if (manage.size() == 0) {
+		manage.push_back(basket);
+		manage[0].initBuffer();
+	}
+	else {
+		if (draw_count >= 10) {
+			draw_count = 0;
+			if (manage.size() < 10) {
+				p.re_init();
+				manage.push_back(p);
+				std::cout << manage.size() - 1 << std::endl;
+			}
 		}
 	}
 	draw_count++;
@@ -273,7 +308,6 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glUseProgram(shaderProgramID);
 	glBindVertexArray(vao);
 	//--- 삼각형 그리기
-
 	for (int i = 0; i < manage.size(); ++i) {
 		manage.at(i).update();
 		if (manage.at(i).get_delete()) {
