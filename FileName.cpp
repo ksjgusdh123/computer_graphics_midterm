@@ -249,13 +249,17 @@ GLfloat rColor = 0.50, gColor = 0.50, bColor = 1.0;
 float ox, oy;
 std::vector<PLANE> manage;
 PLANE p{};
-
+int draw_count = 0;
 GLvoid Timer_event(int value) {
-	if (manage.size() < 10) {
-		p.re_init();
-		manage.push_back(p);
-		std::cout << manage.size() << std::endl;
+	if (draw_count >= 10) {
+		draw_count = 0;
+		if (manage.size() < 10) {
+			p.re_init();
+			manage.push_back(p);
+			std::cout << manage.size() << std::endl;
+		}
 	}
+	draw_count++;
 	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
 	glutTimerFunc(100, Timer_event, 4);
 }
@@ -272,10 +276,10 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 
 	for (int i = 0; i < manage.size(); ++i) {
 		manage.at(i).update();
-		
 		if (manage.at(i).get_delete()) {
 			manage.erase(manage.begin() + i);
 			std::cout << "삭제" << std::endl;
+			i--;
 		}
 	}
 
