@@ -8,6 +8,9 @@
 #include <random>
 #include <vector>
 #include <math.h>
+#include <gl\glm\glm\glm.hpp>
+#include <gl/glm/glm/ext.hpp>
+#include <gl/glm/glm/gtc/matrix_transform.hpp>
 char* filetobuf(const char* file);
 void make_vertexShaders();
 void make_fragmentShaders();
@@ -15,19 +18,133 @@ GLvoid make_shaderProgram();
 GLvoid drawScene();
 GLvoid Reshape(int w, int h);
 GLvoid Mouse_Click(int button, int state, int x, int y);
-GLvoid InitBuffer();
 GLvoid Keyboard(unsigned char key, int x, int y);
 GLvoid Mouse_Move(int x, int y);
 GLvoid Timer_event(int value);
 GLvoid ConvertXY_OPENGL(int x, int y);
+// 랜덤 엔진
+std::random_device rd;
+std::mt19937 dre(rd());
+std::uniform_real_distribution<float> urd{ -1, 1 };
+std::uniform_real_distribution<float> urd_color{ 0.1, 1 };
+std::uniform_int_distribution<int> uid{ 3, 6 };
+
 
 //--- 필요한 변수 선언
 GLint width, height;
 GLuint shaderProgramID; //--- 세이더 프로그램 이름
 GLuint vertexShader; //--- 버텍스 세이더 객체
 GLuint fragmentShader; //--- 프래그먼트 세이더 객체
-GLuint vbo[2], vao;
-GLuint rec_vbo[2];
+GLuint vao;
+
+class PLANE {
+	GLfloat p[6][3];
+	GLfloat color[3];
+	GLuint vbo[2];
+	glm::mat4 TR;
+
+	int dir;
+	float x_move;
+	float y_move;
+
+	int state;
+public:
+	GLvoid re_init() {
+		TR = glm::mat4(1.0f);
+		for (int i = 0; i < 3; ++i) {
+			color[i] = urd_color(dre);
+		}
+		state = 3;//uid(dre);
+		p[0][1] = urd(dre);
+		int n = uid(dre);
+		const float START = 1.2;
+		if (n % 2 == 0) {
+			p[0][0] = START;
+			dir = 1;
+		}
+		else {
+			p[0][0] = -START;
+			dir = -1;
+		}
+		switch (state) {
+		case 3:
+			p[1][0] = p[0][0] + 0.2;
+			p[1][1] = p[0][1];
+			p[2][0] = p[0][0] + 0.2;
+			p[2][1] = p[0][1] + 0.2;
+			for (int i = 3; i < 6; ++i) {
+				for (int j = 0; j < 3; ++j) {
+					p[i][j] = p[2][j];
+				}
+			}
+			break;
+		case 4:
+			break;
+		}
+		initBuffer();
+	}
+
+	GLvoid initBuffer() {
+		glBindVertexArray(vao);
+
+		glGenBuffers(2, vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(p), p, GL_STATIC_DRAW);
+
+		GLint lineAttribute = glGetAttribLocation(shaderProgramID, "positionAttribute");
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glVertexAttribPointer(lineAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(lineAttribute);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color), color, GL_STATIC_DRAW);
+
+		GLint line_Attribute = glGetAttribLocation(shaderProgramID, "colorAttribute");
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glVertexAttribPointer(line_Attribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(line_Attribute);
+	}
+
+	GLvoid pick_draw() {
+		switch (state) {
+		case 3:
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 6); // 설정대로 출력
+			break;
+		case 4:
+			glDrawArrays(GL_LINES, 0, 5); // 설정대로 출력
+			break;
+		case 5:
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 5); // 설정대로 출력
+			break;
+		}
+	}
+
+	GLvoid draw() {
+		int PosLocation = glGetAttribLocation(shaderProgramID, "positionAttribute"); //	: 0  Shader의 'layout (location = 0)' 부분
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // VBO Bind
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+		glEnableVertexAttribArray(PosLocation);
+
+		Transform();
+		unsigned int colorLocation = glGetUniformLocation(shaderProgramID, "colorAttribute");
+		glUniform3fv(colorLocation, 1, color); // 예시 색상
+		pick_draw();
+	}
+
+	GLvoid Transform() {
+		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "transform"); //--- 버텍스 세이더에서모델 변환 위치 가져오기
+		TR = glm::translate(TR, glm::vec3(x_move, y_move, 0.0));
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(TR)); //--- modelTransform 변수에 변환 값 적용하기
+	}
+
+	GLvoid update() {
+		y_move -= 0.01;
+		if (dir > 0)
+			x_move -= 0.01;
+		else
+			x_move += 0.01;
+	}
+};
 
 
 //--- 메인 함수
@@ -40,10 +157,11 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glutInitWindowSize(800, 600);
 	glutCreateWindow("Example1");
 	//--- GLEW 초기화하기
-	glewExperimental = GL_TRUE;
 	glewInit();
+	glewExperimental = GL_TRUE;
 	make_shaderProgram();
-	InitBuffer();
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 	glutDisplayFunc(drawScene);
 	glutMouseFunc(Mouse_Click);
 	glutTimerFunc(100, Timer_event, 1);
@@ -54,28 +172,35 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 }
 
 
-GLfloat rColor = 1.0, gColor = 1.0, bColor = 1.0;
+GLfloat rColor = 0.50, gColor = 0.50, bColor = 1.0;
 float ox, oy;
+std::vector<PLANE> manage;
+PLANE p{};
 
+GLvoid Timer_event(int value) {
+	p.re_init();
+	manage.push_back(p);
+	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
+	glutTimerFunc(100, Timer_event, 4);
+}
 
 
 GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 {
-	//--- 변경된 배경색 설정
 	glClearColor(rColor, gColor, bColor, 1.0f);
-	//glClearColor(1.0, 1.0, 1.0, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//--- 렌더링 파이프라인에 세이더 불러오기
 	glUseProgram(shaderProgramID);
-	//--- 사용할 VAO 불러오기
 	glBindVertexArray(vao);
 	//--- 삼각형 그리기
 
+	for (int i = 0; i < manage.size(); ++i) {
+		manage.at(i).draw();
+		manage.at(i).update();
+	}
 	glutSwapBuffers(); //--- 화면에 출력하기
 }
 
-//--- 다시그리기 콜백 함수
 GLvoid Reshape(int w, int h) //--- 콜백 함수: 다시 그리기 콜백 함수
 {
 	glViewport(0, 0, w, h);
@@ -97,33 +222,16 @@ GLvoid Mouse_Move(int x, int y)
 
 
 
-GLvoid Timer_event(int value) {
-
-
-
-	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
-	glutTimerFunc(100, Timer_event, 4);
-}
 
 
 
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	switch (key) {
-
 	}
 	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
 }
 
 
-GLvoid InitBuffer()
-{
-	glGenVertexArrays(1, &vao); //--- VAO 를 지정하고 할당하기
-	glBindVertexArray(vao); //--- VAO를 바인드하기
-	glGenVertexArrays(1, &vao); //--- VAO 를 지정하고 할당하기
-	glBindVertexArray(vao); //--- VAO를 바인드하기
-
-
-}
 
 GLvoid ConvertXY_OPENGL(int x, int y)
 {
