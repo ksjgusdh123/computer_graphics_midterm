@@ -39,6 +39,8 @@ GLuint vertexShader; //--- 버텍스 세이더 객체
 GLuint fragmentShader; //--- 프래그먼트 세이더 객체
 GLuint vao, linevbo[2];
 
+bool Isline = false;
+
 class PLANE {
 	GLfloat p[6][3];
 	GLfloat color[3];
@@ -179,6 +181,11 @@ public:
 	}
 
 	GLvoid pick_draw() {
+		if(Isline)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		else
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 		switch (state) {
 		case 3:
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 6); // 설정대로 출력
@@ -231,14 +238,14 @@ public:
 			}
 		}
 		else {
-			y_move -= 0.1;
-			y_pos -= 0.1;
+			y_move -= 0.05;
+			y_pos -= 0.05;
 			if (x_pos >= 1) {
 				if (dir > 0) {
-					x_move -= 0.05;
+					x_move -= 0.1;
 				}
 				else {
-					x_move += 0.05;
+					x_move += 0.1;
 				}
 			}
 			else {
@@ -373,6 +380,9 @@ GLvoid Mouse_Click(int button, int state, int x, int y) {
 	}
 	else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
 		click = false;
+		line[1][0] = line[0][0];
+		line[1][1] = line[0][1];
+
 		start_x = end_x;
 		start_y = end_y;
 	}
@@ -442,6 +452,15 @@ GLvoid re_init() {
 
 GLvoid Keyboard(unsigned char key, int x, int y) {
 	switch (key) {
+	case 'l':
+	case 'L':
+		Isline = true;
+		break;
+	case 'f':
+	case 'F':
+		Isline = false;
+		break;
+		
 	}
 	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
 }
