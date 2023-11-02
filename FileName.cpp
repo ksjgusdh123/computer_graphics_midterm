@@ -320,12 +320,17 @@ public:
 								slice_ex = x1;
 								slice_ey = y1;
 							}
+							else if (slice_num == 3) {
+								slice_line += i + 1;
+								slice_ex = x1;
+								slice_ey = y1;
+							}
 							break;
 						}
 					}
 				}
 			}
-			if (slice_num == 2) {
+			if (slice_num == 2 || slice_num == 3) {
 				return true;
 			}
 			else
@@ -339,20 +344,41 @@ public:
 	}
 
 	PLANE& seperate() {
+		float max_y;
+		float max_x;
+		float min_y;
+		float min_x;
+		PLANE temp = *this;
 		switch (state) {
 		case 3:
-			float max_y;
-			float max_x;
-			float min_y;
-			float min_x;
-			PLANE temp = *this;
 			if (slice_ey >= slice_sy) {
 				max_y = slice_ey - y_move; max_x = slice_ex - x_move; min_x = slice_sx - x_move, min_y = slice_sy - y_move;
 			}
 			else{
 				max_y = slice_sy - y_move; max_x = slice_sx - x_move; min_x = slice_ex - x_move, min_y = slice_ey - y_move;
 			}
-			if (slice_line == 2) {
+			if (slice_line == 1) {
+				p[0][0] = min_x + 0.05; p[0][1] = min_y; p[2][0] = max_x + 0.05; p[2][1] = max_y; p[1][0] += 0.05;
+				for (int i = 3; i < 6; ++i) {
+					p[i][0] = p[2][0];
+					p[i][1] = p[2][1];
+				}
+				slice_num = 0;
+				slice_line = 0;
+				re_initBuffer();
+
+				temp.p[1][0] = min_x; temp.p[1][1] = min_y; temp.p[3][0] = max_x; temp.p[3][1] = max_y;
+				for (int i = 4; i < 6; ++i) {
+					temp.p[i][0] = temp.p[3][0];
+					temp.p[i][1] = temp.p[3][1];
+				}
+				temp.slice_num = 0;
+				temp.slice_line = 0;
+				temp.state = 4;
+				std::cout << "분해" << std::endl;
+				return temp;
+			}
+			else if (slice_line == 2) {
 				p[1][0] = min_x; p[1][1] = min_y; p[2][0] = max_x; p[2][1] = max_y;
 				for (int i = 3; i < 6; ++i) {
 					p[i][0] = p[2][0];
@@ -369,9 +395,71 @@ public:
 				}
 				temp.slice_num = 0;
 				temp.slice_line = 0;
+				temp.state = 4;
 				std::cout << "분해" << std::endl;
 				return temp;
 			}
+			else if (slice_line == 3) {
+				if (slice_ex >= slice_sx) {
+					max_y = slice_ey - y_move; max_x = slice_ex - x_move; min_x = slice_sx - x_move, min_y = slice_sy - y_move;
+				}
+				else {
+					max_y = slice_sy - y_move; max_x = slice_sx - x_move; min_x = slice_ex - x_move, min_y = slice_ey - y_move;
+				}
+
+				p[0][0] = min_x; p[0][1] = min_y; p[1][0] = max_x; p[1][1] = max_y;
+				for (int i = 3; i < 6; ++i) {
+					p[i][0] = p[2][0];
+					p[i][1] = p[2][1];
+				}
+				slice_num = 0;
+				slice_line = 0;
+				re_initBuffer();
+
+
+				temp.p[0][0] += 0.05; temp.p[1][0] += 0.05; temp.p[3][0] = max_x + 0.05; temp.p[3][1] = max_y; temp.p[2][0] = min_x + 0.05; temp.p[2][1] = min_y;
+				for (int i = 4; i < 6; ++i) {
+					temp.p[i][0] = temp.p[3][0];
+					temp.p[i][1] = temp.p[3][1];
+				}
+				temp.slice_num = 0;
+				temp.slice_line = 0;
+				temp.state = 4;
+				std::cout << "분해" << std::endl;
+				return temp;
+			}
+			else {
+				if (slice_ex >= slice_sx) {
+					max_y = slice_ey - y_move; max_x = slice_ex - x_move; min_x = slice_sx - x_move, min_y = slice_sy - y_move;
+				}
+				else {
+					max_y = slice_sy - y_move; max_x = slice_sx - x_move; min_x = slice_ex - x_move, min_y = slice_ey - y_move;
+				}
+
+				p[1][0] = max_x; p[1][1] = max_y; p[2][0] = min_x; p[2][1] = min_y;
+				for (int i = 3; i < 6; ++i) {
+					p[i][0] = p[2][0];
+					p[i][1] = p[2][1];
+				}
+				slice_num = 0;
+				slice_line = 0;
+				re_initBuffer();
+
+				temp.p[0][0] = min_x + 0.05; temp.p[0][1] = min_y; temp.p[1][0] = max_x + 0.05; temp.p[1][1] = max_y; temp.p[2][0] += 0.05;
+				for (int i = 3; i < 6; ++i) {
+					temp.p[i][0] = temp.p[2][0];
+					temp.p[i][1] = temp.p[2][1];
+				}
+				temp.slice_num = 0;
+				temp.slice_line = 0;
+				temp.state = 3;
+				std::cout << "분해" << std::endl;
+				return temp;
+			}
+			break;
+
+		case 4:
+
 			break;
 		}
 	}
