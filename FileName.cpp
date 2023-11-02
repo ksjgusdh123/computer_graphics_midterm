@@ -40,6 +40,8 @@ GLuint fragmentShader; //--- 프래그먼트 세이더 객체
 GLuint vao, linevbo[2];
 
 bool Isline = false;
+GLfloat line[2][3]{ };
+GLfloat linecolor[3]{ };
 
 class PLANE {
 	GLfloat p[6][3];
@@ -52,6 +54,11 @@ class PLANE {
 	float x_pos;
 	float y_pos;
 
+	float slice_sx;
+	float slice_ex;
+	float slice_sy;
+	float slice_ey;
+	int slice_num;
 	int dir;
 	int state;
 
@@ -82,12 +89,13 @@ public:
 		dir = 1;
 	}
 	GLvoid re_init() {
+		slice_num = 0;
 		delete_plane = false;
 		TR = glm::mat4(1.0f);
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
 		}
-		state = uid(dre);
+		state = 3;//uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
 		const float START = 1.2;
@@ -212,6 +220,7 @@ public:
 		unsigned int colorLocation = glGetUniformLocation(shaderProgramID, "colorAttribute");
 		glUniform3fv(colorLocation, 1, color); // 예시 색상
 		pick_draw();
+		show();
 	}
 
 	GLvoid Transform() {
@@ -238,24 +247,24 @@ public:
 			}
 		}
 		else {
-			y_move -= 0.05;
-			y_pos -= 0.05;
+			y_move -= 0.005;
+			y_pos -= 0.005;
 			if (x_pos >= 1) {
 				if (dir > 0) {
-					x_move -= 0.1;
+					x_move -= 0.01;
 				}
 				else {
-					x_move += 0.1;
+					x_move += 0.01;
 				}
 			}
 			else {
 				if (dir > 0) {
-					x_move -= 0.1;
+					x_move -= 0.01;
 				}
 				else {
-					x_move += 0.1;
+					x_move += 0.01;
 				}
-				x_pos += 0.1;
+				x_pos += 0.01;
 			}
 
 			if (y_pos < -1) {
@@ -266,6 +275,45 @@ public:
 	}
 
 	bool get_delete() {return delete_plane;}
+
+	void crash_check() {
+		switch (state) {
+		case 3:
+			for (int i = 0; i < 3; ++i) {
+				for (float t = 0; t <= 1; t += 0.05) {
+					float x1 = (1 - t) * p[i][0] + t * p[(i + 1) % 3][0];
+					float y1 = (1 - t) * p[i][1] + t * p[(i + 1) % 3][1];
+					float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
+					if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
+						slice_num++;
+						if (slice_num == 1) {
+							slice_sx = x1;
+							slice_sy = y1;
+						}
+						else {
+							slice_ex = x1;
+							slice_ey = y1;
+						}
+						break;
+					}
+				}
+			}
+			if (slice_num == 2)
+				seperate();
+			break;
+		case 4:
+
+			break;
+		}
+	}
+
+	void seperate() {
+
+	}
+	
+	void show() {
+		std::cout << "slice_num: " << slice_num << std::endl;
+	}
 };
 
 
@@ -302,8 +350,7 @@ PLANE p{};
 PLANE basket{1};
 int draw_count = 0;
 
-GLfloat line[2][3]{ };
-GLfloat linecolor[3]{ };
+
 
 float start_x;
 float start_y;
@@ -319,7 +366,7 @@ GLvoid Timer_event(int value) {
 	else {
 		if (draw_count >= 10) {
 			draw_count = 0;
-			if (manage.size() < 10) {
+			if (manage.size() < 2) {
 				p.re_init();
 				manage.push_back(p);
 				std::cout << manage.size() - 1 << std::endl;
@@ -377,14 +424,23 @@ GLvoid Mouse_Click(int button, int state, int x, int y) {
 		click = true;
 		line[0][0] = start_x;
 		line[0][1] = start_y;
+		line[1][0] = end_x;
+		line[1][1] = end_y;
 	}
 	else if (button == GLUT_LEFT_BUTTON && state == GLUT_UP) {
+		end_x = ox;
+		end_y = oy; 
+		line[1][0] = end_x;
+		line[1][1] = end_y;
+		for (int i = 0; i < manage.size(); ++i) {
+			manage.at(i).crash_check();
+		}
 		click = false;
 		line[1][0] = line[0][0];
 		line[1][1] = line[0][1];
 
-		start_x = end_x;
-		start_y = end_y;
+		start_x = end_x = 100;
+		start_y = end_y = 100;
 	}
 }
 
