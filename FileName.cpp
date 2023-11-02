@@ -59,6 +59,7 @@ class PLANE {
 	float slice_sy;
 	float slice_ey;
 	int slice_num;
+	int slice_line;
 	int dir;
 	int state;
 
@@ -188,6 +189,26 @@ public:
 		glEnableVertexAttribArray(line_Attribute);
 	}
 
+	GLvoid re_initBuffer() {
+		glBindVertexArray(vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(p), p, GL_STATIC_DRAW);
+
+		GLint lineAttribute = glGetAttribLocation(shaderProgramID, "positionAttribute");
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glVertexAttribPointer(lineAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(lineAttribute);
+
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(color), color, GL_STATIC_DRAW);
+
+		GLint line_Attribute = glGetAttribLocation(shaderProgramID, "colorAttribute");
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glVertexAttribPointer(line_Attribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(line_Attribute);
+	}
+
 	GLvoid pick_draw() {
 		if(Isline)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -276,39 +297,83 @@ public:
 
 	bool get_delete() {return delete_plane;}
 
-	void crash_check() {
+	bool crash_check() {
 		switch (state) {
 		case 3:
 			for (int i = 0; i < 3; ++i) {
-				for (float t = 0; t <= 1; t += 0.05) {
-					float x1 = (1 - t) * p[i][0] + t * p[(i + 1) % 3][0];
-					float y1 = (1 - t) * p[i][1] + t * p[(i + 1) % 3][1];
-					float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
-					if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
-						slice_num++;
-						if (slice_num == 1) {
-							slice_sx = x1;
-							slice_sy = y1;
+				for (float t = 0; t <= 1; t += 0.005) {
+					float x1 = (1 - t) * (p[i][0] + x_move) + t * (p[(i + 1) % 3][0] + x_move);
+					float y1 = (1 - t) * (p[i][1] + y_move) + t * (p[(i + 1) % 3][1] + y_move);
+					float max = std::max(line[0][0], line[1][0]);
+					float min = std::min(line[0][0], line[1][0]);
+					if (x1 >= min && x1 <= max) {
+						float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
+						if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
+							slice_num++;
+							if (slice_num == 1) {
+								slice_line += i;
+								slice_sx = x1;
+								slice_sy = y1;
+							}
+							else if(slice_num == 2) {
+								slice_line += i;
+								slice_ex = x1;
+								slice_ey = y1;
+							}
+							break;
 						}
-						else {
-							slice_ex = x1;
-							slice_ey = y1;
-						}
-						break;
 					}
 				}
 			}
-			if (slice_num == 2)
-				seperate();
+			if (slice_num == 2) {
+				return true;
+			}
+			else
+				return false;
 			break;
 		case 4:
 
 			break;
 		}
+		return false;
 	}
 
-	void seperate() {
+	PLANE& seperate() {
+		switch (state) {
+		case 3:
+			float max_y;
+			float max_x;
+			float min_y;
+			float min_x;
+			PLANE temp = *this;
+			if (slice_ey >= slice_sy) {
+				max_y = slice_ey - y_move; max_x = slice_ex - x_move; min_x = slice_sx - x_move, min_y = slice_sy - y_move;
+			}
+			else{
+				max_y = slice_sy - y_move; max_x = slice_sx - x_move; min_x = slice_ex - x_move, min_y = slice_ey - y_move;
+			}
+			if (slice_line == 2) {
+				p[1][0] = min_x; p[1][1] = min_y; p[2][0] = max_x; p[2][1] = max_y;
+				for (int i = 3; i < 6; ++i) {
+					p[i][0] = p[2][0];
+					p[i][1] = p[2][1];
+				}
+				slice_num = 0;
+				slice_line = 0;
+				re_initBuffer();
 
+				temp.p[3][0] = temp.p[1][0] + 0.05; temp.p[3][1] = temp.p[1][1]; temp.p[0][0] = max_x + 0.05; temp.p[0][1] = max_y; temp.p[1][0] = min_x + 0.05; temp.p[1][1] = min_y; temp.p[2][0] += 0.05;
+				for (int i = 4; i < 6; ++i) {
+					temp.p[i][0] = temp.p[3][0];
+					temp.p[i][1] = temp.p[3][1];
+				}
+				temp.slice_num = 0;
+				temp.slice_line = 0;
+				std::cout << "ºÐÇØ" << std::endl;
+				return temp;
+			}
+			break;
+		}
 	}
 	
 	void show() {
@@ -433,7 +498,12 @@ GLvoid Mouse_Click(int button, int state, int x, int y) {
 		line[1][0] = end_x;
 		line[1][1] = end_y;
 		for (int i = 0; i < manage.size(); ++i) {
-			manage.at(i).crash_check();
+			if (manage.at(i).crash_check()) {
+				p = manage.at(i).seperate();
+				p.initBuffer();
+				manage.push_back(p);
+				break;
+			}
 		}
 		click = false;
 		line[1][0] = line[0][0];
@@ -441,6 +511,8 @@ GLvoid Mouse_Click(int button, int state, int x, int y) {
 
 		start_x = end_x = 100;
 		start_y = end_y = 100;
+		re_init();
+
 	}
 }
 
