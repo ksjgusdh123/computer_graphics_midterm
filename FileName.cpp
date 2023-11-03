@@ -60,6 +60,7 @@ class PLANE {
 	float slice_ey;
 	int slice_num;
 	int slice_line;
+	int slice_area[4];
 	int dir;
 	int state;
 
@@ -96,7 +97,7 @@ public:
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
 		}
-		state = 3;//uid(dre);
+		state = 4;//uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
 		const float START = 1.2;
@@ -362,24 +363,53 @@ public:
 						if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
 							slice_num++;
 							if (slice_num == 1) {
-								slice_line += i;
 								slice_sx = x1;
 								slice_sy = y1;
+								slice_area[0] = i;
 							}
 							else if (slice_num == 2) {
-								slice_line += i;
 								slice_ex = x1;
 								slice_ey = y1;
+								slice_area[1] = i;
 							}
 							else if (slice_num == 3) {
-								slice_line += i;
-								slice_ex = x1;
-								slice_ey = y1;
+								if (slice_area[0] == 0) {
+									if (slice_area[1] == 1) {
+										if (i == 2) {
+											if (slice_sy >= slice_ey - 0.01 && slice_sy <= slice_ey + 0.01)
+												slice_line = 0;
+											else
+												slice_line = 1;
+										}
+
+										else if (i == 3) {
+											if (slice_sy >= slice_ey - 0.01 && slice_sy <= slice_ey + 0.01)
+												slice_line = 3;
+											else
+												slice_line = 2;
+										}
+									}
+									else {
+										if (slice_ex >= x1 - 0.01 && slice_ex <= x1 + 0.01)
+											slice_line = 4;
+										else 
+											slice_line = 5;
+									}
+								}
+								else if (slice_area[0] == 1) {
+									if (slice_sy >= y1 - 0.01 && slice_sx <= y1 + 0.01)
+										slice_line = 6;
+									else
+										slice_line = 7;
+								}
+								if (!(slice_line == 2)) {
+									slice_ex = x1;
+									slice_ey = y1;
+								}
+								slice_area[2] = i;
 							}
 							else if (slice_num == 4) {
-								slice_line += i + 1;
-								slice_ex = x1;
-								slice_ey = y1;
+								slice_area[3] = i;
 							}
 							break;
 						}
@@ -387,7 +417,7 @@ public:
 				}
 			}
 		}
-		if (slice_num == 2) {
+		if (slice_num == 2 || slice_num == 3 || slice_num == 4) {
 			return true;
 		}
 		slice_num = 0;
@@ -424,6 +454,10 @@ public:
 				slice_num = 0;
 				slice_line = 0;
 				state = 4;
+				if (dir > 0)
+					dir = -1;
+				else
+					dir = 1;
 				re_initBuffer();
 
 				temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy;
@@ -447,6 +481,11 @@ public:
 				}
 				slice_num = 0;
 				slice_line = 0;
+
+				if (dir > 0)
+					dir = -1;
+				else
+					dir = 1;
 				re_initBuffer();
 
 				temp.p[0][0] = min_x + 0.05; temp.p[0][1] = min_y;
@@ -473,6 +512,11 @@ public:
 				}
 				slice_num = 0;
 				slice_line = 0;
+
+				if (dir > 0)
+					dir = -1;
+				else
+					dir = 1;
 				re_initBuffer();
 
 				temp.p[0][0] += 0.05; 
@@ -498,6 +542,11 @@ public:
 				}
 				slice_num = 0;
 				slice_line = 0;
+
+				if (dir > 0)
+					dir = -1;
+				else
+					dir = 1;
 				re_initBuffer();
 
 				temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy; 
@@ -516,31 +565,265 @@ public:
 			break;
 
 		case 4:
-			if (slice_line == 1) {
-				p[0][0] -= 0.05; 
-				p[1][0] = p_sx - 0.05; p[1][1] = p_sy; 
-				p[2][0] -= 0.05;
-				p[4][0] = p[3][0] - 0.05; p[4][1] = p[3][1];
-				p[3][0] = p_ex - 0.05; p[3][1] = p_ey;
-				for (int i = 5; i < 6; ++i) {
-					p[i][0] = p[4][0];
-					p[i][1] = p[4][1];
-				}
-				slice_num = 0;
-				slice_line = 0;
-				state = 5;
-				re_initBuffer();
+			if (slice_num == 2 || slice_num == 3) {
+				if((slice_area[0] == 0 && slice_area[1] == 1 && slice_line != 3) || (slice_area[0] == 0 && slice_area[1] == 1 && slice_area[2] == 2 && slice_line == 1) || (slice_area[0] == 0 && slice_area[1] == 1 && slice_area[2] == 3 && slice_line == 2)) {
+					p[0][0] -= 0.05;
+					p[1][0] = p_sx - 0.05; p[1][1] = p_sy;
+					p[2][0] -= 0.05;
+					p[4][0] = p[3][0] - 0.05; p[4][1] = p[3][1];
+					p[3][0] = p_ex - 0.05; p[3][1] = p_ey;
+					for (int i = 5; i < 6; ++i) {
+						p[i][0] = p[4][0];
+						p[i][1] = p[4][1];
+					}
+					slice_num = 0;
+					slice_line = 0;
 
-				temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy; temp.p[1][0] += 0.05; temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
-				for (int i = 3; i < 6; ++i) {
-					temp.p[i][0] = temp.p[2][0];
-					temp.p[i][1] = temp.p[2][1];
+					if (dir > 0)
+						dir = -1;
+					else
+						dir = 1;
+					state = 5;
+					re_initBuffer();
+
+					temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy; 
+					temp.p[1][0] += 0.05; 
+					temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
+					for (int i = 3; i < 6; ++i) {
+						temp.p[i][0] = temp.p[2][0];
+						temp.p[i][1] = temp.p[2][1];
+					}
+					temp.slice_num = 0;
+					temp.slice_line = 0;
+					temp.state = 3;
+					std::cout << "분해" << std::endl;
+					return temp;
 				}
-				temp.slice_num = 0;
-				temp.slice_line = 0;
-				temp.state = 3;
-				std::cout << "분해" << std::endl;
-				return temp;
+				else if ((slice_area[0] == 1 && slice_area[1] == 2) || (slice_area[0] == 0 && slice_area[1] == 1 && slice_area[2] == 2 && slice_line == 0) || (slice_area[0] == 1 && slice_area[1] == 2 && slice_area[2] == 3 && slice_line == 7)) {
+					p[0][0] = p[2][0] - 0.05; p[0][1] = p[2][1];
+					p[1][0] = p_ex - 0.05; p[1][1] = p_ey;
+					p[2][0] = temp.p[0][0] - 0.05; p[2][1] = temp.p[0][1];
+					p[3][0] = p_sx - 0.05; p[3][1] = p_sy;
+					p[4][0] = temp.p[1][0] - 0.05; p[4][1] = temp.p[1][1];
+					for (int i = 5; i < 6; ++i) {
+						p[i][0] = p[4][0];
+						p[i][1] = p[4][1];
+					}
+					slice_num = 0;
+					slice_line = 0;
+
+					if (dir > 0)
+						dir = -1;
+					else
+						dir = 1;
+					state = 5;
+					re_initBuffer();
+
+					temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy;
+					temp.p[1][0] = temp.p[3][0] + 0.05; temp.p[1][1] = temp.p[3][1];
+					temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
+					for (int i = 3; i < 6; ++i) {
+						temp.p[i][0] = temp.p[2][0];
+						temp.p[i][1] = temp.p[2][1];
+					}
+					temp.slice_num = 0;
+					temp.slice_line = 0;
+					temp.state = 3;
+					std::cout << "분해" << std::endl;
+					return temp;
+				}
+				else if ((slice_area[0] == 2 && slice_area[1] == 3) || (slice_area[0] == 0 && slice_area[1] == 2 && slice_area[2] == 3 && slice_line == 5) || (slice_area[0] == 1 && slice_area[1] == 2 && slice_area[2] == 3 && slice_line == 6)) {
+					p[0][0] = temp.p[3][0] + 0.05; p[0][1] = temp.p[3][1];
+					p[1][0] = p_sx + 0.05; p[1][1] = p_sy;
+					p[2][0] = temp.p[1][0] + 0.05; p[2][1] = temp.p[1][1];
+					p[3][0] = p_ex + 0.05; p[3][1] = p_ey;
+					p[4][0] = temp.p[0][0] + 0.05; p[4][1] = temp.p[0][1];
+					for (int i = 5; i < 6; ++i) {
+						p[i][0] = p[4][0];
+						p[i][1] = p[4][1];
+					}
+					slice_num = 0;
+					slice_line = 0;
+
+					if (dir > 0)
+						dir = -1;
+					else
+						dir = 1;
+					state = 5;
+					re_initBuffer();
+
+					temp.p[0][0] = p_ex - 0.05; temp.p[0][1] = p_ey;
+					temp.p[1][0] = temp.p[2][0] - 0.05; temp.p[1][1] = temp.p[2][1];
+					temp.p[2][0] = p_sx - 0.05; temp.p[2][1] = p_sy;
+					for (int i = 3; i < 6; ++i) {
+						temp.p[i][0] = temp.p[2][0];
+						temp.p[i][1] = temp.p[2][1];
+					}
+					temp.slice_num = 0;
+					temp.slice_line = 0;
+					temp.state = 3;
+					std::cout << "분해" << std::endl;
+					return temp;
+				}
+				else if ((slice_area[0] == 0 && slice_area[1] == 3) || (slice_area[0] == 0 && slice_area[1] == 2 && slice_area[2] == 3 && slice_line == 4) || (slice_area[0] == 0 && slice_area[1] == 1 && slice_area[2] == 3 && slice_line == 3)) {
+					p[0][0] = temp.p[2][0] - 0.05; p[0][1] = temp.p[2][1];
+					p[1][0] = p_ex - 0.05; p[1][1] = p_ey;
+					p[2][0] = temp.p[3][0] - 0.05; p[2][1] = temp.p[3][1];
+					p[3][0] = p_sx - 0.05; p[3][1] = p_sy;
+					p[4][0] = temp.p[1][0] - 0.05; p[4][1] = temp.p[1][1];
+					slice_num = 0;
+					slice_line = 0;
+					for (int i = 5; i < 6; ++i) {
+						p[i][0] = p[4][0];
+						p[i][1] = p[4][1];
+					}
+					if (dir > 0)
+						dir = -1;
+					else
+						dir = 1;
+					state = 5;
+					re_initBuffer();
+
+					temp.p[1][0] = temp.p[0][0] + 0.05; temp.p[1][1] = temp.p[0][1];
+					temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy;
+					temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
+					for (int i = 3; i < 6; ++i) {
+						temp.p[i][0] = temp.p[2][0];
+						temp.p[i][1] = temp.p[2][1];
+					}
+					temp.slice_num = 0;
+					temp.slice_line = 0;
+					temp.state = 3;
+					std::cout << "분해" << std::endl;
+					return temp;
+				}
+				else if (slice_area[0] == 0 && slice_area[1] == 2) {
+					p[0][0] -= 0.05;
+					p[1][0] = p_sx - 0.05; p[1][1] = p_sy;
+					p[2][0] -= 0.05;
+					p[3][0] = p_ex - 0.05; p[3][1] = p_ey;
+					slice_num = 0;
+					slice_line = 0;
+					for (int i = 4; i < 6; ++i) {
+						p[i][0] = p[3][0];
+						p[i][1] = p[3][1];
+					}
+					if (dir > 0)
+						dir = -1;
+					else
+						dir = 1;
+					state = 4;
+					re_initBuffer();
+
+					temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy;
+					temp.p[1][0] += 0.05;
+					temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
+					temp.p[3][0] += 0.05;
+					for (int i = 4; i < 6; ++i) {
+						temp.p[i][0] = temp.p[3][0];
+						temp.p[i][1] = temp.p[3][1];
+					}
+					temp.slice_num = 0;
+					temp.slice_line = 0;
+					temp.state = 4;
+					std::cout << "분해" << std::endl;
+					return temp;
+				}
+				else if (slice_area[0] == 1 && slice_area[1] == 3) {
+					p[0][0] -= 0.05;
+					p[1][0] -= 0.05;
+					p[2][0] = p_ex - 0.05; p[2][1] = p_ey;
+					p[3][0] = p_sx - 0.05; p[3][1] = p_sy;
+					slice_num = 0;
+					slice_line = 0;
+					for (int i = 4; i < 6; ++i) {
+						p[i][0] = p[3][0];
+						p[i][1] = p[3][1];
+					}
+					if (dir > 0)
+						dir = -1;
+					else
+						dir = 1;
+					state = 4;
+					re_initBuffer();
+
+					temp.p[0][0] = p_ex + 0.05; temp.p[0][1] = p_ey;
+					temp.p[1][0] = p_sx + 0.05; temp.p[1][1] = p_sy;
+					temp.p[2][0] += 0.05;
+					temp.p[3][0] += 0.05;
+					for (int i = 4; i < 6; ++i) {
+						temp.p[i][0] = temp.p[3][0];
+						temp.p[i][1] = temp.p[3][1];
+					}
+					temp.slice_num = 0;
+					temp.slice_line = 0;
+					temp.state = 4;
+					std::cout << "분해" << std::endl;
+					return temp;
+
+				}
+			}
+			else if (slice_num == 4) {
+				if (p_sx >= p_ex) {
+					p[0][0] = p_sx - 0.05; p[0][1] = p_sy;
+					p[1][0] = temp.p[0][0] - 0.05; p[1][1] = temp.p[0][1];
+					p[2][0] = p_ex - 0.05; p[2][1] = p_ey;
+					slice_num = 0;
+					slice_line = 0;
+					for (int i = 3; i < 6; ++i) {
+						p[i][0] = p[2][0];
+						p[i][1] = p[2][1];
+					}
+					if (dir > 0)
+						dir = -1;
+					else
+						dir = 1;
+					state = 3;
+					re_initBuffer();
+
+					temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy;
+					temp.p[1][0] = temp.p[3][0] + 0.05; temp.p[1][1] = temp.p[3][1];
+					temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
+					for (int i = 3; i < 6; ++i) {
+						temp.p[i][0] = temp.p[2][0];
+						temp.p[i][1] = temp.p[2][1];
+					}
+					temp.slice_num = 0;
+					temp.slice_line = 0;
+					temp.state = 3;
+					std::cout << "분해" << std::endl;
+					return temp;
+				}
+				else if (p_sx < p_ex) {
+					p[0][0] = p_ex - 0.05; p[0][1] = p_ey;
+					p[1][0] = temp.p[2][0] - 0.05; p[1][1] = temp.p[2][1];
+					p[2][0] = p_sx - 0.05; p[2][1] = p_sy;
+					slice_num = 0;
+					slice_line = 0;
+					for (int i = 3; i < 6; ++i) {
+						p[i][0] = p[2][0];
+						p[i][1] = p[2][1];
+					}
+					if (dir > 0)
+						dir = -1;
+					else
+						dir = 1;
+					state = 3;
+					re_initBuffer();
+
+					temp.p[0][0] += 0.05;
+					temp.p[1][0] += 0.05;
+					temp.p[2][0] = temp.p[3][0] + 0.05;
+					for (int i = 3; i < 6; ++i) {
+						temp.p[i][0] = temp.p[2][0];
+						temp.p[i][1] = temp.p[2][1];
+					}
+					temp.slice_num = 0;
+					temp.slice_line = 0;
+					temp.state = 3;
+					std::cout << "분해" << std::endl;
+					return temp;
+				}
 			}
 			break;
 		}
