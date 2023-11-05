@@ -101,7 +101,7 @@ public:
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
 		}
-		state = 3;// uid(dre);
+		state = 5;// uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
 		const float START = 1.2;
@@ -143,12 +143,12 @@ public:
 		case 5:
 			p[1][0] = p[0][0] + 0.07;
 			p[1][1] = p[0][1] - 0.1;
-			p[2][0] = p[0][0] + 0.15;
-			p[2][1] = p[0][1] + 0.07;
-			p[3][0] = p[0][0] + 0.23;
-			p[3][1] = p[0][1] - 0.1;
-			p[4][0] = p[0][0] + 0.3;
-			p[4][1] = p[0][1];
+			p[2][0] = p[0][0] + 0.23;
+			p[2][1] = p[0][1] - 0.1;
+			p[3][0] = p[0][0] + 0.3;
+			p[3][1] = p[0][1];
+			p[4][0] = p[0][0] + 0.15;
+			p[4][1] = p[0][1] + 0.07;
 			y_pos = p[2][1];
 			for (int i = 5; i < 6; ++i) {
 				for (int j = 0; j < 3; ++j) {
@@ -376,57 +376,39 @@ public:
 			slice_num = 0;
 			return false;
 		case 5:
-			/*	x.push_back(p[0][0] + x_move);
-				x.push_back(p[1][0] + x_move);
-				x.push_back(p[3][0] + x_move);
-				x.push_back(p[4][0] + x_move);
-				x.push_back(p[2][0] + x_move);
-				y.push_back(p[0][1] + y_move);
-				y.push_back(p[1][1] + y_move);
-				y.push_back(p[3][1] + y_move);
-				y.push_back(p[4][1] + y_move);
-				y.push_back(p[2][1] + y_move);
+			for (int i = 0; i < 5; ++i) {
+				x.push_back(p[i][0] + x_move);
+				y.push_back(p[i][1] + y_move);
+			}
 
-				for (int i = 0; i < 4; ++i) {
-					for (float t = 0; t <= 1; t += 0.005) {
-						float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 4));
-						float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 4));
+			for (int i = 0; i < 5; ++i) {
+				for (float t = 0; t <= 1; t += 0.005) {
+					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 5));
+					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 5));
 
-						float max = std::max(line[0][0], line[1][0]);
-						float min = std::min(line[0][0], line[1][0]);
-						if (x1 >= min && x1 <= max) {
-							float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
-							if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
-								slice_num++;
-								if (slice_num == 1) {
-									slice_sx = x1;
-									slice_sy = y1;
-									slice_area[0] = i;
-								}
-								else if (slice_num == 2) {
-									slice_ex = x1;
-									slice_ey = y1;
-									slice_area[1] = i;
-									if (slice_area[0] == 0) {
-										if (i == 1)
-											slice_except = 1;
-										if (i == 4)
-											slice_except = 0;
-									}
-									else if (slice_area[0] == 1) {
-										if(i == 2)
-											slice_except = 3;
-									}
-								}
-								break;
+					float max = std::max(line[0][0], line[1][0]);
+					float min = std::min(line[0][0], line[1][0]);
+					if (x1 >= min && x1 <= max) {
+						float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
+						if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
+							slice_num++;
+							if (slice_num == 1) {
+								slice_start[0] = x1;
+								slice_start[1] = y1;
 							}
+							else if (slice_num == 3 || slice_num == 4 || slice_num == 2) {
+								slice_end[0] = x1;
+								slice_end[1] = y1;
+							}
+							break;
 						}
 					}
 				}
-				if (slice_num == 2) {
-					return true;
-				}
-				slice_num = 0;*/
+			}
+			if (slice_num == 2 || slice_num == 3 || slice_num == 4) {
+				return true;
+			}
+			slice_num = 0;
 			return false;
 		case 6:
 			return false;
@@ -536,7 +518,6 @@ public:
 			temp.slice_num = 0;
 			temp.state = EL_temp_x.size();
 			return temp;
-			break;
 		case 4:
 			x.push_back(p[0][0] + x_move);
 			x.push_back(p[1][0] + x_move);
@@ -626,69 +607,90 @@ public:
 			temp.state = EL_temp_x.size();
 			return temp;
 
-			break;
 		case 5:
-			/*if (slice_num == 2) {
-				for (int i = 0; i <= 5; ++i) {
-					if (slice_except == 1 || slice_except == 3) {
-						if (slice_except == i) {
-							p[i][0] = p_sx - 0.05;
-							p[i][1] = p_sy;
-						}
-						else if (slice_except + 2 == i) {
-							p[i][0] = p_ex - 0.05;
-							p[i][1] = p_ey;
-						}
-						else {
-							if (i == 5) {
-								p[5][0] = temp.p[3][0] - 0.05;
-								p[5][1] = temp.p[3][1];
-							}
-							else {
-								p[i][0] = temp.p[i][0] - 0.05;
-								p[i][1] = temp.p[i][1];
-							}
-						}
+			for (int i = 0; i < 5; ++i) {
+				x.push_back(p[i][0] + x_move);
+				y.push_back(p[i][1] + y_move);
+			}
+
+			for (int i = 0; i < 5; ++i) {
+				if (EL_input) {
+					EL_x.push_back(x.at(i) - x_move);
+					EL_y.push_back(y.at(i) - y_move);
+				}
+				else {
+					EL_temp_x.push_back(x.at(i) - x_move);
+					EL_temp_y.push_back(y.at(i) - y_move);
+				}
+				for (float t = 0; t <= 1; t += 0.005) {
+					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 5));
+					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 5));
+					if (EL_input == true && slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
+						EL_x.push_back(slice_start[0] - x_move);
+						EL_y.push_back(slice_start[1] - y_move);
+						EL_temp_x.push_back(slice_start[0] - x_move);
+						EL_temp_y.push_back(slice_start[1] - y_move);
+						EL_input = false;
+						break;
 					}
-					else if (slice_except == 0) {
-						if (i == 5) {
-							p[i][0] = p_sx - 0.05;
-							p[i][1] = p_sy;
-						}
-						else if (i == 4) {
-							p[i][0] = p_ex - 0.05;
-							p[i][1] = p_ey;
-						}
-						else {
-							p[i][0] = temp.p[5 - 1 - i][0] - 0.05;
-							p[i][1] = temp.p[5 - 1 - i][1];
-						}
+					else if (EL_input == false && slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
+						EL_x.push_back(slice_end[0] - x_move);
+						EL_y.push_back(slice_end[1] - y_move);
+						EL_temp_x.push_back(slice_end[0] - x_move);
+						EL_temp_y.push_back(slice_end[1] - y_move);
+						EL_input = true;
+						break;
 					}
 				}
+			}
 
-				slice_num = 0;
-				slice_line = 0;
-
-				if (dir > 0)
-					dir = -1;
-				else
-					dir = 1;
-				re_initBuffer();
-
-				temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy;
-				temp.p[1][0] = temp.p[slice_except][0] + 0.05; temp.p[1][1] = temp.p[slice_except][1];
-				temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
-				for (int i = 3; i < 6; ++i) {
-					temp.p[i][0] = temp.p[2][0];
-					temp.p[i][1] = temp.p[2][1];
+			for (int i = 0; i < EL_x.size(); ++i) {
+				if (EL_x.size() == 4) {
+					if (i == 2) {
+						p[3][0] = EL_x.at(i) - 0.05;
+						p[3][1] = EL_y.at(i);
+					}
+					else if (i == 3) {
+						p[2][0] = EL_x.at(i) - 0.05;
+						p[2][1] = EL_y.at(i);
+					}
+					else {
+						p[i][0] = EL_x.at(i) - 0.05;
+						p[i][1] = EL_y.at(i);
+					}
 				}
-				temp.slice_num = 0;
-				temp.slice_line = 0;
-				temp.state = 3;
-				std::cout << "ºÐÇØ" << std::endl;
-				return temp;
-			}*/
-			break;
+				else {
+					p[i][0] = EL_x.at(i) - 0.05;
+					p[i][1] = EL_y.at(i);
+				}
+			}
+			slice_num = 0;
+			state = EL_x.size();
+			re_initBuffer();
+
+			for (int i = 0; i < EL_temp_x.size(); ++i) {
+				if (EL_temp_x.size() == 4) {
+					if (i == 2) {
+						temp.p[3][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[3][1] = EL_temp_y.at(i);
+					}
+					else if (i == 3) {
+						temp.p[2][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[2][1] = EL_temp_y.at(i);
+					}
+					else {
+						temp.p[i][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[i][1] = EL_temp_y.at(i);
+					}
+				}
+				else {
+					temp.p[i][0] = EL_temp_x.at(i) + 0.05;
+					temp.p[i][1] = EL_temp_y.at(i);
+				}
+			}
+			temp.slice_num = 0;
+			temp.state = EL_temp_x.size();
+			return temp;
 		}
 	}
 
