@@ -101,7 +101,7 @@ public:
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
 		}
-		state = 4;// uid(dre);
+		state = 3;// uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
 		const float START = 1.2;
@@ -318,19 +318,12 @@ public:
 						if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
 							slice_num++;
 							if (slice_num == 1) {
-								slice_area[0] = i;
-								slice_sx = x1;
-								slice_sy = y1;
+								slice_start[0] = x1;
+								slice_start[1] = y1;
 							}
-							else if (slice_num == 2) {
-								slice_area[1] = i;
-								slice_ex = x1;
-								slice_ey = y1;
-							}
-							else if (slice_num == 3) {
-								slice_area[2] = i;
-								slice_ex = x1;
-								slice_ey = y1;
+							else if (slice_num == 3 || slice_num == 2) {
+								slice_end[0] = x1;
+								slice_end[1] = y1;
 							}
 							break;
 						}
@@ -367,9 +360,6 @@ public:
 							if (slice_num == 1) {
 								slice_start[0] = x1;
 								slice_start[1] = y1;
-								slice_sx = x1;
-								slice_sy = y1;
-								slice_area[0] = i;
 							}
 							else if (slice_num == 3 || slice_num == 4 || slice_num == 2) {
 								slice_end[0] = x1;
@@ -461,110 +451,92 @@ public:
 
 		switch (state) {
 		case 3:
-			if (slice_num == 2) {
-				if (slice_area[0] == 0) {
-					if (slice_area[1] == 1) {
-						p[0][0] -= 0.05;
-						p[1][0] = p_sx - 0.05; p[1][1] = p_sy;
-						p[2][0] = temp.p[2][0] - 0.05; p[2][1] = temp.p[2][1];
-						p[3][0] = p_ex - 0.05; p[3][1] = p_ey;
-						for (int i = 4; i < 6; ++i) {
-							p[i][0] = p[3][0];
-							p[i][1] = p[3][1];
-						}
-						slice_num = 0;
-						slice_line = 0;
-						if (dir > 0)
-							dir = -1;
-						else
-							dir = 1;
-						state = 4;
-						re_initBuffer();
+			x.push_back(p[0][0] + x_move);
+			x.push_back(p[1][0] + x_move);
+			x.push_back(p[2][0] + x_move);
+			y.push_back(p[0][1] + y_move);
+			y.push_back(p[1][1] + y_move);
+			y.push_back(p[2][1] + y_move);
 
-						temp.p[0][0] = p_sx + 0.05; temp.p[0][1] = p_sy;
-						temp.p[1][0] += 0.05;
-						temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
-						for (int i = 3; i < 6; ++i) {
-							temp.p[i][0] = temp.p[2][0];
-							temp.p[i][1] = temp.p[2][1];
-						}
-						temp.slice_num = 0;
-						temp.slice_line = 0;
-						temp.state = 3;
-						std::cout << "분해" << std::endl;
-						return temp;
-					}
-					else if (slice_area[1] == 2) {
-						p[0][0] = p_sx - 0.05; p[0][1] = p_sy;
-						p[1][0] -= 0.05;
-						p[2][0] = p_ex - 0.05; p[2][1] = p_ey;
-						p[3][0] = temp.p[2][0] - 0.05; p[3][1] = temp.p[2][1];
-						for (int i = 4; i < 6; ++i) {
-							p[i][0] = p[3][0];
-							p[i][1] = p[3][1];
-						}
-						slice_num = 0;
-						slice_line = 0;
-						if (dir > 0)
-							dir = -1;
-						else
-							dir = 1;
-						state = 4;
-						re_initBuffer();
-
-						temp.p[0][0] += 0.05;
-						temp.p[1][0] = p_sx + 0.05; temp.p[0][1] = p_sy;
-						temp.p[2][0] = p_ex + 0.05; temp.p[2][1] = p_ey;
-						for (int i = 3; i < 6; ++i) {
-							temp.p[i][0] = temp.p[2][0];
-							temp.p[i][1] = temp.p[2][1];
-						}
-						temp.slice_num = 0;
-						temp.slice_line = 0;
-						temp.state = 3;
-						std::cout << "분해" << std::endl;
-						return temp;
-					}
+			for (int i = 0; i < 3; ++i) {
+				if (EL_input) {
+					EL_x.push_back(x.at(i) - x_move);
+					EL_y.push_back(y.at(i) - y_move);
 				}
-				else if (slice_area[0] == 1) {
-					if (slice_area[1] == 2) {
-						p[0][0] -= 0.05;
-						p[1][0] -= 0.05;
-						p[2][0] = p_ex - 0.05; p[2][1] = p_ey;
-						p[3][0] = p_sx - 0.05; p[3][1] = p_sy;
-						for (int i = 4; i < 6; ++i) {
-							p[i][0] = p[3][0];
-							p[i][1] = p[3][1];
-						}
-						slice_num = 0;
-						slice_line = 0;
-						if (dir > 0)
-							dir = -1;
-						else
-							dir = 1;
-						state = 4;
-						re_initBuffer();
-
-						temp.p[0][0] = p_ex + 0.05; temp.p[0][1] = p_ey;
-						temp.p[1][0] = p_sx + 0.05; temp.p[1][1] = p_sy;
-						temp.p[2][0] += 0.05;
-						for (int i = 3; i < 6; ++i) {
-							temp.p[i][0] = temp.p[2][0];
-							temp.p[i][1] = temp.p[2][1];
-						}
-						temp.slice_num = 0;
-						temp.slice_line = 0;
-						temp.state = 3;
-						std::cout << "분해" << std::endl;
-						return temp;
+				else {
+					EL_temp_x.push_back(x.at(i) - x_move);
+					EL_temp_y.push_back(y.at(i) - y_move);
+				}
+				for (float t = 0; t <= 1; t += 0.005) {
+					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 3));
+					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 3));
+					if (EL_input == true && slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
+						EL_x.push_back(slice_start[0] - x_move);
+						EL_y.push_back(slice_start[1] - y_move);
+						EL_temp_x.push_back(slice_start[0] - x_move);
+						EL_temp_y.push_back(slice_start[1] - y_move);
+						EL_input = false;
+						break;
+					}
+					else if (EL_input == false && slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
+						EL_x.push_back(slice_end[0] - x_move);
+						EL_y.push_back(slice_end[1] - y_move);
+						EL_temp_x.push_back(slice_end[0] - x_move);
+						EL_temp_y.push_back(slice_end[1] - y_move);
+						EL_input = true;
+						break;
 					}
 				}
 			}
-			else if (slice_num == 3) {
 
+			for (int i = 0; i < EL_x.size(); ++i) {
+				if (EL_x.size() == 4) {
+					if (i == 2) {
+						p[3][0] = EL_x.at(i) - 0.05;
+						p[3][1] = EL_y.at(i);
+					}
+					else if (i == 3) {
+						p[2][0] = EL_x.at(i) - 0.05;
+						p[2][1] = EL_y.at(i);
+					}
+					else {
+						p[i][0] = EL_x.at(i) - 0.05;
+						p[i][1] = EL_y.at(i);
+					}
+				}
+				else {
+					p[i][0] = EL_x.at(i) - 0.05;
+					p[i][1] = EL_y.at(i);
+				}
 			}
+			slice_num = 0;
+			state = EL_x.size();
+			re_initBuffer();
+
+			for (int i = 0; i < EL_temp_x.size(); ++i) {
+				if (EL_temp_x.size() == 4) {
+					if (i == 2) {
+						temp.p[3][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[3][1] = EL_temp_y.at(i);
+					}
+					else if (i == 3) {
+						temp.p[2][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[2][1] = EL_temp_y.at(i);
+					}
+					else {
+						temp.p[i][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[i][1] = EL_temp_y.at(i);
+					}
+				}
+				else {
+					temp.p[i][0] = EL_temp_x.at(i) + 0.05;
+					temp.p[i][1] = EL_temp_y.at(i);
+				}
+			}
+			temp.slice_num = 0;
+			temp.state = EL_temp_x.size();
+			return temp;
 			break;
-
 		case 4:
 			x.push_back(p[0][0] + x_move);
 			x.push_back(p[1][0] + x_move);
