@@ -305,114 +305,52 @@ public:
 	bool crash_check() {
 		std::vector<float> x;
 		std::vector<float> y;
-		switch (state) {
-		case 3:
-			for (int i = 0; i < 3; ++i) {
-				for (float t = 0; t <= 1; t += 0.005) {
-					float x1 = (1 - t) * (p[i][0] + x_move) + t * (p[(i + 1) % 3][0] + x_move);
-					float y1 = (1 - t) * (p[i][1] + y_move) + t * (p[(i + 1) % 3][1] + y_move);
-					float max = std::max(line[0][0], line[1][0]);
-					float min = std::min(line[0][0], line[1][0]);
-					if (x1 >= min && x1 <= max) {
-						float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
-						if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
-							slice_num++;
-							if (slice_num == 1) {
-								slice_start[0] = x1;
-								slice_start[1] = y1;
-							}
-							else if (slice_num == 3 || slice_num == 2) {
-								slice_end[0] = x1;
-								slice_end[1] = y1;
-							}
-							break;
-						}
-					}
-				}
+		for (int i = 0; i < state; ++i) {
+			if (state == 4) {
+				x.push_back(p[0][0] + x_move);
+				x.push_back(p[1][0] + x_move);
+				x.push_back(p[3][0] + x_move);
+				x.push_back(p[2][0] + x_move);
+				y.push_back(p[0][1] + y_move);
+				y.push_back(p[1][1] + y_move);
+				y.push_back(p[3][1] + y_move);
+				y.push_back(p[2][1] + y_move);
 			}
-			if (slice_num == 2 || slice_num == 3) {
-				return true;
-			}
-			slice_num = 0;
-			return false;
-			break;
-		case 4:
-			x.push_back(p[0][0] + x_move);
-			x.push_back(p[1][0] + x_move);
-			x.push_back(p[3][0] + x_move);
-			x.push_back(p[2][0] + x_move);
-			y.push_back(p[0][1] + y_move);
-			y.push_back(p[1][1] + y_move);
-			y.push_back(p[3][1] + y_move);
-			y.push_back(p[2][1] + y_move);
-
-			for (int i = 0; i < 4; ++i) {
-				for (float t = 0; t <= 1; t += 0.005) {
-					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 4));
-					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 4));
-
-					float max = std::max(line[0][0], line[1][0]);
-					float min = std::min(line[0][0], line[1][0]);
-					if (x1 >= min && x1 <= max) {
-						float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
-						if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
-							slice_num++;
-							if (slice_num == 1) {
-								slice_start[0] = x1;
-								slice_start[1] = y1;
-							}
-							else if (slice_num == 3 || slice_num == 4 || slice_num == 2) {
-								slice_end[0] = x1;
-								slice_end[1] = y1;
-							}
-							break;
-						}
-					}
-				}
-			}
-			if (slice_num == 2 || slice_num == 3 || slice_num == 4) {
-				return true;
-			}
-			slice_num = 0;
-			return false;
-		case 5:
-			for (int i = 0; i < 5; ++i) {
+			else {
 				x.push_back(p[i][0] + x_move);
 				y.push_back(p[i][1] + y_move);
 			}
+		}
 
-			for (int i = 0; i < 5; ++i) {
-				for (float t = 0; t <= 1; t += 0.005) {
-					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 5));
-					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 5));
-
-					float max = std::max(line[0][0], line[1][0]);
-					float min = std::min(line[0][0], line[1][0]);
-					if (x1 >= min && x1 <= max) {
-						float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
-						if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
-							slice_num++;
-							if (slice_num == 1) {
-								slice_start[0] = x1;
-								slice_start[1] = y1;
-							}
-							else if (slice_num == 3 || slice_num == 4 || slice_num == 2) {
-								slice_end[0] = x1;
-								slice_end[1] = y1;
-							}
-							break;
+		for (int i = 0; i < state; ++i) {
+			for (float t = 0; t <= 1; t += 0.005) {
+				float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % state));
+				float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % state));
+				float max = std::max(line[0][0], line[1][0]);
+				float min = std::min(line[0][0], line[1][0]);
+				if (x1 >= min && x1 <= max) {
+					float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
+					if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
+						slice_num++;
+						if (slice_num == 1) {
+							slice_start[0] = x1;
+							slice_start[1] = y1;
 						}
+						else if (slice_num == 3 || slice_num == 2 || slice_num == 4) {
+							slice_end[0] = x1;
+							slice_end[1] = y1;
+						}
+						break;
 					}
 				}
 			}
-			if (slice_num == 2 || slice_num == 3 || slice_num == 4) {
-				return true;
-			}
-			slice_num = 0;
-			return false;
-		case 6:
-			return false;
 		}
+		if (slice_num == 2 || slice_num == 3 || slice_num == 4) {
+			return true;
+		}
+		slice_num = 0;
+		return false;
+
 
 	}
 
