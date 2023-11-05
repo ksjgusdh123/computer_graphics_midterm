@@ -228,10 +228,10 @@ public:
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // 설정대로 출력
 			break;
 		case 5:
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 5); // 설정대로 출력
+			glDrawArrays(GL_TRIANGLE_FAN, 0, 5); // 설정대로 출력
 			break;
 		case 6:
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 6); // 설정대로 출력
+			glDrawArrays(GL_TRIANGLE_FAN, 0, 6); // 설정대로 출력
 			break;
 		}
 	}
@@ -371,51 +371,9 @@ public:
 								slice_sy = y1;
 								slice_area[0] = i;
 							}
-							else if (slice_num == 2) {
+							else if (slice_num == 3 || slice_num == 4 || slice_num == 2) {
 								slice_end[0] = x1;
 								slice_end[1] = y1;
-								slice_ex = x1;
-								slice_ey = y1;
-								slice_area[1] = i;
-							}
-							else if (slice_num == 3) {
-								if (slice_area[0] == 0) {
-									if (slice_area[1] == 1) {
-										if (i == 2) {
-											if (slice_sy >= slice_ey - 0.01 && slice_sy <= slice_ey + 0.01)
-												slice_line = 0;
-											else
-												slice_line = 1;
-										}
-
-										else if (i == 3) {
-											if (slice_sy >= slice_ey - 0.01 && slice_sy <= slice_ey + 0.01)
-												slice_line = 3;
-											else
-												slice_line = 2;
-										}
-									}
-									else {
-										if (slice_ex >= x1 - 0.01 && slice_ex <= x1 + 0.01)
-											slice_line = 4;
-										else
-											slice_line = 5;
-									}
-								}
-								else if (slice_area[0] == 1) {
-									if (slice_sy >= y1 - 0.01 && slice_sx <= y1 + 0.01)
-										slice_line = 6;
-									else
-										slice_line = 7;
-								}
-								if (!(slice_line == 2)) {
-									slice_ex = x1;
-									slice_ey = y1;
-								}
-								slice_area[2] = i;
-							}
-							else if (slice_num == 4) {
-								slice_area[3] = i;
 							}
 							break;
 						}
@@ -629,7 +587,7 @@ public:
 				for (float t = 0; t <= 1; t += 0.005) {
 					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 4));
 					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 4));
-					if (slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
+					if (EL_input == true && slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
 						EL_x.push_back(slice_start[0] - x_move);
 						EL_y.push_back(slice_start[1] - y_move);
 						EL_temp_x.push_back(slice_start[0] - x_move);
@@ -637,7 +595,7 @@ public:
 						EL_input = false;
 						break;
 					}
-					else if (slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
+					else if (EL_input == false && slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
 						EL_x.push_back(slice_end[0] - x_move);
 						EL_y.push_back(slice_end[1] - y_move);
 						EL_temp_x.push_back(slice_end[0] - x_move);
@@ -651,17 +609,21 @@ public:
 			for (int i = 0; i < EL_x.size(); ++i) {
 				if (EL_x.size() == 4) {
 					if (i == 2) {
-						p[3][0] = EL_x.at(i);
+						p[3][0] = EL_x.at(i) - 0.05;
 						p[3][1] = EL_y.at(i);
 					}
 					else if (i == 3) {
-						p[2][0] = EL_x.at(i);
+						p[2][0] = EL_x.at(i) - 0.05;
 						p[2][1] = EL_y.at(i);
 					}
 					else {
-						p[i][0] = EL_x.at(i);
+						p[i][0] = EL_x.at(i) - 0.05;
 						p[i][1] = EL_y.at(i);
 					}
+				}
+				else {
+					p[i][0] = EL_x.at(i) - 0.05;
+					p[i][1] = EL_y.at(i);
 				}
 			}
 			slice_num = 0;
@@ -669,16 +631,22 @@ public:
 			re_initBuffer();
 
 			for (int i = 0; i < EL_temp_x.size(); ++i) {
-				if (i == 2) {
-					temp.p[3][0] = EL_temp_x.at(i);
-					temp.p[3][1] = EL_temp_y.at(i);
-				}
-				else if (i == 3) {
-					temp.p[2][0] = EL_temp_x.at(i);
-					temp.p[2][1] = EL_temp_y.at(i);
+				if (EL_temp_x.size() == 4) {
+					if (i == 2) {
+						temp.p[3][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[3][1] = EL_temp_y.at(i);
+					}
+					else if (i == 3) {
+						temp.p[2][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[2][1] = EL_temp_y.at(i);
+					}
+					else {
+						temp.p[i][0] = EL_temp_x.at(i) + 0.05;
+						temp.p[i][1] = EL_temp_y.at(i);
+					}
 				}
 				else {
-					temp.p[i][0] = EL_temp_x.at(i);
+					temp.p[i][0] = EL_temp_x.at(i) + 0.05;
 					temp.p[i][1] = EL_temp_y.at(i);
 				}
 			}
