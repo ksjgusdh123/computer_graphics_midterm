@@ -57,16 +57,9 @@ class PLANE {
 
 	float slice_start[2];
 	float slice_end[2];
-	float slice_sx;
-	float slice_ex;
-	float slice_sy;
-	float slice_ey;
 	int slice_num;
-	int slice_line;
-	int slice_area[4];
 	int dir;
 	int state;
-	int slice_except;
 
 	bool delete_plane;
 	bool basket;
@@ -332,8 +325,10 @@ public:
 							slice_start[1] = y1;
 						}
 						else if (slice_num == 3 || slice_num == 2 || slice_num == 4) {
-							slice_end[0] = x1;
-							slice_end[1] = y1;
+							if (!(slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01)) {
+								slice_end[0] = x1;
+								slice_end[1] = y1;
+							}
 						}
 						break;
 					}
