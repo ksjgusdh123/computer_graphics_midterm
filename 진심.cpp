@@ -222,16 +222,11 @@ public:
 
 		switch (state) {
 		case 3:
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 3); // 설정대로 출력
-			break;
 		case 4:
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // 설정대로 출력
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, state); // 설정대로 출력
 			break;
-		case 5:
-			glDrawArrays(GL_TRIANGLE_FAN, 0, 5); // 설정대로 출력
-			break;
-		case 6:
-			glDrawArrays(GL_TRIANGLE_FAN, 0, 6); // 설정대로 출력
+		default:
+			glDrawArrays(GL_TRIANGLE_FAN, 0, state); // 설정대로 출력
 			break;
 		}
 	}
@@ -350,17 +345,10 @@ public:
 		}
 		slice_num = 0;
 		return false;
-
-
 	}
 
 	PLANE& seperate() {
-		float p_sx = slice_sx - x_move;
-		float p_sy = slice_sy - y_move;
-		float p_ex = slice_ex - x_move;
-		float p_ey = slice_ey - y_move;
 		PLANE temp = *this;
-
 		std::vector<float> x;
 		std::vector<float> y;
 		std::vector<float>EL_x;
@@ -369,267 +357,101 @@ public:
 		std::vector<float>EL_temp_y;
 		bool EL_input = true;
 
-		switch (state) {
-		case 3:
-			x.push_back(p[0][0] + x_move);
-			x.push_back(p[1][0] + x_move);
-			x.push_back(p[2][0] + x_move);
-			y.push_back(p[0][1] + y_move);
-			y.push_back(p[1][1] + y_move);
-			y.push_back(p[2][1] + y_move);
-
-			for (int i = 0; i < 3; ++i) {
-				if (EL_input) {
-					EL_x.push_back(x.at(i) - x_move);
-					EL_y.push_back(y.at(i) - y_move);
-				}
-				else {
-					EL_temp_x.push_back(x.at(i) - x_move);
-					EL_temp_y.push_back(y.at(i) - y_move);
-				}
-				for (float t = 0; t <= 1; t += 0.005) {
-					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 3));
-					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 3));
-					if (EL_input == true && slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
-						EL_x.push_back(slice_start[0] - x_move);
-						EL_y.push_back(slice_start[1] - y_move);
-						EL_temp_x.push_back(slice_start[0] - x_move);
-						EL_temp_y.push_back(slice_start[1] - y_move);
-						EL_input = false;
-						break;
-					}
-					else if (EL_input == false && slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
-						EL_x.push_back(slice_end[0] - x_move);
-						EL_y.push_back(slice_end[1] - y_move);
-						EL_temp_x.push_back(slice_end[0] - x_move);
-						EL_temp_y.push_back(slice_end[1] - y_move);
-						EL_input = true;
-						break;
-					}
-				}
+		for (int i = 0; i < state; ++i) {
+			if (state == 4) {
+				x.push_back(p[0][0] + x_move);
+				x.push_back(p[1][0] + x_move);
+				x.push_back(p[3][0] + x_move);
+				x.push_back(p[2][0] + x_move);
+				y.push_back(p[0][1] + y_move);
+				y.push_back(p[1][1] + y_move);
+				y.push_back(p[3][1] + y_move);
+				y.push_back(p[2][1] + y_move);
 			}
-
-			for (int i = 0; i < EL_x.size(); ++i) {
-				if (EL_x.size() == 4) {
-					if (i == 2) {
-						p[3][0] = EL_x.at(i) - 0.05;
-						p[3][1] = EL_y.at(i);
-					}
-					else if (i == 3) {
-						p[2][0] = EL_x.at(i) - 0.05;
-						p[2][1] = EL_y.at(i);
-					}
-					else {
-						p[i][0] = EL_x.at(i) - 0.05;
-						p[i][1] = EL_y.at(i);
-					}
-				}
-				else {
-					p[i][0] = EL_x.at(i) - 0.05;
-					p[i][1] = EL_y.at(i);
-				}
-			}
-			slice_num = 0;
-			state = EL_x.size();
-			re_initBuffer();
-
-			for (int i = 0; i < EL_temp_x.size(); ++i) {
-				if (EL_temp_x.size() == 4) {
-					if (i == 2) {
-						temp.p[3][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[3][1] = EL_temp_y.at(i);
-					}
-					else if (i == 3) {
-						temp.p[2][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[2][1] = EL_temp_y.at(i);
-					}
-					else {
-						temp.p[i][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[i][1] = EL_temp_y.at(i);
-					}
-				}
-				else {
-					temp.p[i][0] = EL_temp_x.at(i) + 0.05;
-					temp.p[i][1] = EL_temp_y.at(i);
-				}
-			}
-			temp.slice_num = 0;
-			temp.state = EL_temp_x.size();
-			return temp;
-		case 4:
-			x.push_back(p[0][0] + x_move);
-			x.push_back(p[1][0] + x_move);
-			x.push_back(p[3][0] + x_move);
-			x.push_back(p[2][0] + x_move);
-			y.push_back(p[0][1] + y_move);
-			y.push_back(p[1][1] + y_move);
-			y.push_back(p[3][1] + y_move);
-			y.push_back(p[2][1] + y_move);
-
-			for (int i = 0; i < 4; ++i) {
-				if (EL_input) {
-					EL_x.push_back(x.at(i) - x_move);
-					EL_y.push_back(y.at(i) - y_move);
-				}
-				else {
-					EL_temp_x.push_back(x.at(i) - x_move);
-					EL_temp_y.push_back(y.at(i) - y_move);
-				}
-				for (float t = 0; t <= 1; t += 0.005) {
-					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 4));
-					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 4));
-					if (EL_input == true && slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
-						EL_x.push_back(slice_start[0] - x_move);
-						EL_y.push_back(slice_start[1] - y_move);
-						EL_temp_x.push_back(slice_start[0] - x_move);
-						EL_temp_y.push_back(slice_start[1] - y_move);
-						EL_input = false;
-						break;
-					}
-					else if (EL_input == false && slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
-						EL_x.push_back(slice_end[0] - x_move);
-						EL_y.push_back(slice_end[1] - y_move);
-						EL_temp_x.push_back(slice_end[0] - x_move);
-						EL_temp_y.push_back(slice_end[1] - y_move);
-						EL_input = true;
-						break;
-					}
-				}
-			}
-
-			for (int i = 0; i < EL_x.size(); ++i) {
-				if (EL_x.size() == 4) {
-					if (i == 2) {
-						p[3][0] = EL_x.at(i) - 0.05;
-						p[3][1] = EL_y.at(i);
-					}
-					else if (i == 3) {
-						p[2][0] = EL_x.at(i) - 0.05;
-						p[2][1] = EL_y.at(i);
-					}
-					else {
-						p[i][0] = EL_x.at(i) - 0.05;
-						p[i][1] = EL_y.at(i);
-					}
-				}
-				else {
-					p[i][0] = EL_x.at(i) - 0.05;
-					p[i][1] = EL_y.at(i);
-				}
-			}
-			slice_num = 0;
-			state = EL_x.size();
-			re_initBuffer();
-
-			for (int i = 0; i < EL_temp_x.size(); ++i) {
-				if (EL_temp_x.size() == 4) {
-					if (i == 2) {
-						temp.p[3][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[3][1] = EL_temp_y.at(i);
-					}
-					else if (i == 3) {
-						temp.p[2][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[2][1] = EL_temp_y.at(i);
-					}
-					else {
-						temp.p[i][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[i][1] = EL_temp_y.at(i);
-					}
-				}
-				else {
-					temp.p[i][0] = EL_temp_x.at(i) + 0.05;
-					temp.p[i][1] = EL_temp_y.at(i);
-				}
-			}
-			temp.slice_num = 0;
-			temp.state = EL_temp_x.size();
-			return temp;
-
-		case 5:
-			for (int i = 0; i < 5; ++i) {
+			else {
 				x.push_back(p[i][0] + x_move);
 				y.push_back(p[i][1] + y_move);
 			}
+		}
 
-			for (int i = 0; i < 5; ++i) {
-				if (EL_input) {
-					EL_x.push_back(x.at(i) - x_move);
-					EL_y.push_back(y.at(i) - y_move);
+		for (int i = 0; i < state; ++i) {
+			if (EL_input) {
+				EL_x.push_back(x.at(i) - x_move);
+				EL_y.push_back(y.at(i) - y_move);
+			}
+			else {
+				EL_temp_x.push_back(x.at(i) - x_move);
+				EL_temp_y.push_back(y.at(i) - y_move);
+			}
+			for (float t = 0; t <= 1; t += 0.005) {
+				float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % state));
+				float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % state));
+				if (EL_input == true && slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
+					EL_x.push_back(slice_start[0] - x_move);
+					EL_y.push_back(slice_start[1] - y_move);
+					EL_temp_x.push_back(slice_start[0] - x_move);
+					EL_temp_y.push_back(slice_start[1] - y_move);
+					EL_input = false;
+					break;
 				}
-				else {
-					EL_temp_x.push_back(x.at(i) - x_move);
-					EL_temp_y.push_back(y.at(i) - y_move);
-				}
-				for (float t = 0; t <= 1; t += 0.005) {
-					float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % 5));
-					float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % 5));
-					if (EL_input == true && slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
-						EL_x.push_back(slice_start[0] - x_move);
-						EL_y.push_back(slice_start[1] - y_move);
-						EL_temp_x.push_back(slice_start[0] - x_move);
-						EL_temp_y.push_back(slice_start[1] - y_move);
-						EL_input = false;
-						break;
-					}
-					else if (EL_input == false && slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
-						EL_x.push_back(slice_end[0] - x_move);
-						EL_y.push_back(slice_end[1] - y_move);
-						EL_temp_x.push_back(slice_end[0] - x_move);
-						EL_temp_y.push_back(slice_end[1] - y_move);
-						EL_input = true;
-						break;
-					}
+				else if (EL_input == false && slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
+					EL_x.push_back(slice_end[0] - x_move);
+					EL_y.push_back(slice_end[1] - y_move);
+					EL_temp_x.push_back(slice_end[0] - x_move);
+					EL_temp_y.push_back(slice_end[1] - y_move);
+					EL_input = true;
+					break;
 				}
 			}
+		}
 
-			for (int i = 0; i < EL_x.size(); ++i) {
-				if (EL_x.size() == 4) {
-					if (i == 2) {
-						p[3][0] = EL_x.at(i) - 0.05;
-						p[3][1] = EL_y.at(i);
-					}
-					else if (i == 3) {
-						p[2][0] = EL_x.at(i) - 0.05;
-						p[2][1] = EL_y.at(i);
-					}
-					else {
-						p[i][0] = EL_x.at(i) - 0.05;
-						p[i][1] = EL_y.at(i);
-					}
+		for (int i = 0; i < EL_x.size(); ++i) {
+			if (EL_x.size() == 4) {
+				if (i == 2) {
+					p[3][0] = EL_x.at(i) - 0.05;
+					p[3][1] = EL_y.at(i);
+				}
+				else if (i == 3) {
+					p[2][0] = EL_x.at(i) - 0.05;
+					p[2][1] = EL_y.at(i);
 				}
 				else {
 					p[i][0] = EL_x.at(i) - 0.05;
 					p[i][1] = EL_y.at(i);
 				}
 			}
-			slice_num = 0;
-			state = EL_x.size();
-			re_initBuffer();
+			else {
+				p[i][0] = EL_x.at(i) - 0.05;
+				p[i][1] = EL_y.at(i);
+			}
+		}
+		slice_num = 0;
+		state = EL_x.size();
+		re_initBuffer();
 
-			for (int i = 0; i < EL_temp_x.size(); ++i) {
-				if (EL_temp_x.size() == 4) {
-					if (i == 2) {
-						temp.p[3][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[3][1] = EL_temp_y.at(i);
-					}
-					else if (i == 3) {
-						temp.p[2][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[2][1] = EL_temp_y.at(i);
-					}
-					else {
-						temp.p[i][0] = EL_temp_x.at(i) + 0.05;
-						temp.p[i][1] = EL_temp_y.at(i);
-					}
+		for (int i = 0; i < EL_temp_x.size(); ++i) {
+			if (EL_temp_x.size() == 4) {
+				if (i == 2) {
+					temp.p[3][0] = EL_temp_x.at(i) + 0.05;
+					temp.p[3][1] = EL_temp_y.at(i);
+				}
+				else if (i == 3) {
+					temp.p[2][0] = EL_temp_x.at(i) + 0.05;
+					temp.p[2][1] = EL_temp_y.at(i);
 				}
 				else {
 					temp.p[i][0] = EL_temp_x.at(i) + 0.05;
 					temp.p[i][1] = EL_temp_y.at(i);
 				}
 			}
-			temp.slice_num = 0;
-			temp.state = EL_temp_x.size();
-			return temp;
+			else {
+				temp.p[i][0] = EL_temp_x.at(i) + 0.05;
+				temp.p[i][1] = EL_temp_y.at(i);
+			}
 		}
+		temp.slice_num = 0;
+		temp.state = EL_temp_x.size();
+		return temp;
 	}
 
 	void show() {
