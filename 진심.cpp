@@ -224,7 +224,7 @@ public:
 		}
 	}
 
-	GLvoid draw() {
+	GLvoid draw() { 
 		int PosLocation = glGetAttribLocation(shaderProgramID, "positionAttribute"); //	: 0  Shader¿« 'layout (location = 0)' ∫Œ∫–
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // VBO Bind
 		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
