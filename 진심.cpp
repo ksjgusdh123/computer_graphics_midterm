@@ -44,11 +44,16 @@ GLfloat line[2][3]{ };
 GLfloat linecolor[3]{ };
 const float START = 1.2;
 float SPEED = 0.05;
+bool line_draw = false;
 
 class PLANE {
 	GLfloat p[20][3];
 	GLfloat color[3];
 	GLuint vbo[2];
+	GLuint line_vbo[2];
+	GLfloat line_color[3];
+	GLfloat line_route[10][3];
+
 	glm::mat4 TR;
 
 	float x_move;
@@ -171,6 +176,11 @@ public:
 			y_pos = p[1][1];
 			break;
 		}
+		line_route[0][0] = p[0][0];	line_route[0][1] = p[0][1];
+		for (int i = 0; i < 9; ++i) {
+			line_route[i + 1][0] = line_route[i][0] - (SPEED * 5) * dir;
+			line_route[i + 1][1] = line_route[i][1] - SPEED * 2.5;
+		}
 		initBuffer();
 	}
 
@@ -193,6 +203,24 @@ public:
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 		glVertexAttribPointer(line_Attribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(line_Attribute);
+
+		glGenBuffers(2, line_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(line_route), line_route, GL_STATIC_DRAW);
+
+		lineAttribute = glGetAttribLocation(shaderProgramID, "positionAttribute");
+		glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]);
+		glVertexAttribPointer(lineAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(lineAttribute);
+
+		glBindBuffer(GL_ARRAY_BUFFER, line_vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(line_color), line_color, GL_STATIC_DRAW);
+
+		line_Attribute = glGetAttribLocation(shaderProgramID, "colorAttribute");
+		glBindBuffer(GL_ARRAY_BUFFER, line_vbo[1]);
+		glVertexAttribPointer(line_Attribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(line_Attribute);
+
 	}
 
 	GLvoid re_initBuffer() {
@@ -213,6 +241,7 @@ public:
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 		glVertexAttribPointer(line_Attribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(line_Attribute);
+
 	}
 
 	GLvoid pick_draw() {
@@ -233,15 +262,27 @@ public:
 	}
 
 	GLvoid draw() { 
-		int PosLocation = glGetAttribLocation(shaderProgramID, "positionAttribute"); //	: 0  Shader의 'layout (location = 0)' 부분
+		unsigned int colorLocation = glGetUniformLocation(shaderProgramID, "colorAttribute");
+		glUniform3fv(colorLocation, 1, color); // 예시 색상
+		int PosLocation;
+		if ((!slice_state) && line_draw) {
+			PosLocation = glGetAttribLocation(shaderProgramID, "positionAttribute"); //	: 0  Shader의 'layout (location = 0)' 부분
+			glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]); // VBO Bind
+			glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+			glEnableVertexAttribArray(PosLocation);
+			Transform2();
+
+			glDrawArrays(GL_LINE_STRIP, 0, 10);
+		}
+		PosLocation = glGetAttribLocation(shaderProgramID, "positionAttribute"); //	: 0  Shader의 'layout (location = 0)' 부분
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // VBO Bind
 		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 		glEnableVertexAttribArray(PosLocation);
 
 		Transform();
-		unsigned int colorLocation = glGetUniformLocation(shaderProgramID, "colorAttribute");
-		glUniform3fv(colorLocation, 1, color); // 예시 색상
 		pick_draw();
+
+		
 	}
 
 	GLvoid Transform() {
@@ -250,6 +291,13 @@ public:
 		TR = glm::translate(TR, glm::vec3(x_move, y_move, 0.0));
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(TR)); //--- modelTransform 변수에 변환 값 적용하기
 	}
+
+	GLvoid Transform2() {
+		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "transform"); //--- 버텍스 세이더에서모델 변환 위치 가져오기
+		TR = glm::mat4(1.0f);
+		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(TR)); //--- modelTransform 변수에 변환 값 적용하기
+	}
+
 
 	GLvoid update(const PLANE& bas) {
 		if (basket) {
@@ -730,7 +778,13 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		if(SPEED >= 0.03)
 			SPEED -= 0.005;
 		break;
-
+	case 'r':
+	case 'R':
+		if (line_draw)
+			line_draw = false;
+		else
+			line_draw = true;
+		break;
 	}
 }
 
