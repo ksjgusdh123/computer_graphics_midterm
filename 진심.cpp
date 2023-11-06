@@ -785,6 +785,10 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		else
 			line_draw = true;
 		break;
+	case 'q':
+	case 'Q':
+		glutLeaveMainLoop();
+		break;
 	}
 }
 
