@@ -29,7 +29,7 @@ std::random_device rd;
 std::mt19937 dre(rd());
 std::uniform_real_distribution<float> urd{ 0.4, 1 };
 std::uniform_real_distribution<float> urd_color{ 0.1, 1 };
-std::uniform_int_distribution<int> uid{ 3, 4 };
+std::uniform_int_distribution<int> uid{ 3, 6 };
 
 
 //--- 필요한 변수 선언
@@ -45,7 +45,7 @@ GLfloat linecolor[3]{ };
 
 
 class PLANE {
-	GLfloat p[6][3];
+	GLfloat p[10][3];
 	GLfloat color[3];
 	GLuint vbo[2];
 	glm::mat4 TR;
@@ -87,6 +87,7 @@ public:
 		state = 4;
 		dir = 1;
 	}
+
 	GLvoid re_init() {
 		slice_num = 0;
 		delete_plane = false;
@@ -94,7 +95,7 @@ public:
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
 		}
-		state = uid(dre);
+		state = 6;//uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
 		const float START = 1.2;
@@ -263,6 +264,10 @@ public:
 		else {
 			y_move -= 0.005;
 			y_pos -= 0.005;
+			/*if (x_pos >= 0.5) {
+				y_move += 0.005;
+				y_pos += 0.005;
+			}*/
 			if (x_pos >= 1) {
 				if (dir > 0) {
 					x_move -= 0.01;
@@ -293,6 +298,7 @@ public:
 	bool crash_check() {
 		std::vector<float> x;
 		std::vector<float> y;
+		float ly;
 		for (int i = 0; i < state; ++i) {
 			if (state == 4) {
 				x.push_back(p[0][0] + x_move);
@@ -317,7 +323,10 @@ public:
 				float max = std::max(line[0][0], line[1][0]);
 				float min = std::min(line[0][0], line[1][0]);
 				if (x1 >= min && x1 <= max) {
-					float ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
+					if (line[1][0] >= line[0][0] - 0.01 && line[1][0] <= line[0][0] + 0.01) {
+						line[0][0] += 0.001;
+					}
+					ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
 					if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
 						slice_num++;
 						if (slice_num == 1) {
@@ -382,18 +391,30 @@ public:
 				float x1 = (1 - t) * (x.at(i)) + t * (x.at((i + 1) % state));
 				float y1 = (1 - t) * (y.at(i)) + t * (y.at((i + 1) % state));
 				if (EL_input == true && slice_start[0] >= x1 - 0.01 && slice_start[0] <= x1 + 0.01 && slice_start[1] >= y1 - 0.01 && slice_start[1] <= y1 + 0.01) {
-					EL_x.push_back(slice_start[0] - x_move);
-					EL_y.push_back(slice_start[1] - y_move);
-					EL_temp_x.push_back(slice_start[0] - x_move);
-					EL_temp_y.push_back(slice_start[1] - y_move);
+					if (t <= 0.001) {
+						EL_temp_x.push_back(slice_start[0] - x_move);
+						EL_temp_y.push_back(slice_start[1] - y_move);
+					}
+					else {
+						EL_x.push_back(slice_start[0] - x_move);
+						EL_y.push_back(slice_start[1] - y_move);
+						EL_temp_x.push_back(slice_start[0] - x_move);
+						EL_temp_y.push_back(slice_start[1] - y_move);
+					}
 					EL_input = false;
 					break;
 				}
 				else if (EL_input == false && slice_end[0] >= x1 - 0.01 && slice_end[0] <= x1 + 0.01 && slice_end[1] >= y1 - 0.01 && slice_end[1] <= y1 + 0.01) {
-					EL_x.push_back(slice_end[0] - x_move);
-					EL_y.push_back(slice_end[1] - y_move);
-					EL_temp_x.push_back(slice_end[0] - x_move);
-					EL_temp_y.push_back(slice_end[1] - y_move);
+					if (t <= 0.001) {
+						EL_x.push_back(slice_start[0] - x_move);
+						EL_y.push_back(slice_start[1] - y_move);
+					}
+					else {
+						EL_x.push_back(slice_end[0] - x_move);
+						EL_y.push_back(slice_end[1] - y_move);
+						EL_temp_x.push_back(slice_end[0] - x_move);
+						EL_temp_y.push_back(slice_end[1] - y_move);
+					}
 					EL_input = true;
 					break;
 				}
@@ -422,6 +443,7 @@ public:
 		}
 		slice_num = 0;
 		state = EL_x.size();
+		dir *= -1;
 		re_initBuffer();
 
 		for (int i = 0; i < EL_temp_x.size(); ++i) {
@@ -504,7 +526,7 @@ GLvoid Timer_event(int value) {
 	else {
 		if (draw_count >= 10) {
 			draw_count = 0;
-			if (manage.size() < 2) {
+			if (manage.size() < 1000) {
 				p.re_init();
 				manage.push_back(p);
 				std::cout << manage.size() - 1 << std::endl;
