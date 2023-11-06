@@ -45,7 +45,8 @@ GLfloat linecolor[3]{ };
 const float START = 1.2;
 float SPEED = 0.05;
 bool line_draw = false;
-
+float rad = 0;
+bool rot = false;
 class PLANE {
 	GLfloat p[20][3];
 	GLfloat color[3];
@@ -289,8 +290,26 @@ public:
 
 	GLvoid Transform() {
 		unsigned int modelLocation = glGetUniformLocation(shaderProgramID, "transform"); //--- 버텍스 세이더에서모델 변환 위치 가져오기
+		float max_x = -100, min_x = 100, max_y = -100, min_y = 100;
+		for (int i = 0; i < state; ++i) {
+			if (max_x < p[i][0])
+				max_x = p[i][0];
+			if (min_x > p[i][0])
+				min_x = p[i][0];
+			if (max_y < p[i][1])
+				max_y = p[i][1];
+			if (min_y > p[i][1])
+				min_y = p[i][1];
+		}
+		float avg_x = (max_x + min_x) / 2;
+		float avg_y = (max_y + min_y) / 2;
 		TR = glm::mat4(1.0f);
 		TR = glm::translate(TR, glm::vec3(x_move, y_move, 0.0));
+		if (!basket && !basket_ok && rot) {
+			TR = glm::translate(TR, glm::vec3(avg_x, avg_y, 0.0));
+			TR = glm::rotate(TR, glm::radians(rad), glm::vec3(0, 0, 1));
+			TR = glm::translate(TR, glm::vec3(-avg_x, -avg_y, 0.0));
+		}
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(TR)); //--- modelTransform 변수에 변환 값 적용하기
 	}
 
@@ -608,6 +627,8 @@ float end_y;
 bool click = false;
 
 GLvoid Timer_event(int value) {
+	rad+=10;
+
 	if (manage.size() == 0) {
 		manage.push_back(basket);
 		manage[0].initBuffer();
@@ -783,12 +804,19 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 		if(SPEED >= 0.03)
 			SPEED -= 0.005;
 		break;
-	case 'r':
-	case 'R':
+	case 'w':
+	case 'W':
 		if (line_draw)
 			line_draw = false;
 		else
 			line_draw = true;
+		break;
+	case 'r':
+	case 'R':
+		if (rot)
+			rot = false;
+		else
+			rot = true;
 		break;
 	case 'q':
 	case 'Q':
