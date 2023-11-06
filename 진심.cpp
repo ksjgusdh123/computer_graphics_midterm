@@ -42,10 +42,11 @@ GLuint vao, linevbo[2];
 bool Isline = false;
 GLfloat line[2][3]{ };
 GLfloat linecolor[3]{ };
-
+const float START = 1.2;
+float SPEED = 0.05;
 
 class PLANE {
-	GLfloat p[10][3];
+	GLfloat p[20][3];
 	GLfloat color[3];
 	GLuint vbo[2];
 	glm::mat4 TR;
@@ -63,6 +64,8 @@ class PLANE {
 
 	bool delete_plane;
 	bool basket;
+	bool slice_state;
+	bool basket_ok;
 public:
 	PLANE() {}
 	PLANE(int i) {
@@ -89,6 +92,10 @@ public:
 	}
 
 	GLvoid re_init() {
+		basket_ok = false;
+		slice_state = false;
+		x_move = 0;
+		y_move = 0;
 		slice_num = 0;
 		delete_plane = false;
 		TR = glm::mat4(1.0f);
@@ -98,7 +105,6 @@ public:
 		state = 6;//uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
-		const float START = 1.2;
 		if (n % 2 == 0) {
 			p[0][0] = START;
 			dir = 1;
@@ -107,6 +113,7 @@ public:
 			p[0][0] = -START;
 			dir = -1;
 		}
+		std::cout << p[0][0] << "에서 생성" << std::endl;
 		switch (state) {
 		case 3:
 			p[1][0] = p[0][0] + 0.2;
@@ -235,7 +242,6 @@ public:
 		unsigned int colorLocation = glGetUniformLocation(shaderProgramID, "colorAttribute");
 		glUniform3fv(colorLocation, 1, color); // 예시 색상
 		pick_draw();
-		show();
 	}
 
 	GLvoid Transform() {
@@ -245,7 +251,7 @@ public:
 		glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(TR)); //--- modelTransform 변수에 변환 값 적용하기
 	}
 
-	GLvoid update() {
+	GLvoid update(const PLANE& bas) {
 		if (basket) {
 			if (dir >= 1 && p[1][0] + x_move >= 0.9) {
 				dir = -1;
@@ -262,32 +268,29 @@ public:
 			}
 		}
 		else {
-			y_move -= 0.005;
-			y_pos -= 0.005;
-			/*if (x_pos >= 0.5) {
-				y_move += 0.005;
-				y_pos += 0.005;
-			}*/
-			if (x_pos >= 1) {
-				if (dir > 0) {
-					x_move -= 0.01;
+			if (basket_ok) {
+				if (bas.dir >= 1) {
+					x_move += 0.05;
 				}
 				else {
-					x_move += 0.01;
+					x_move -= 0.05;
 				}
 			}
 			else {
-				if (dir > 0) {
-					x_move -= 0.01;
+				basket_Check(bas);
+				y_move -= SPEED / 10;
+				y_pos -= SPEED / 10;
+				if (slice_state) {
+					x_move += (-1 * SPEED / 10) * dir;
+					y_move -= SPEED / 3;
+					y_pos -= SPEED / 3;
 				}
 				else {
-					x_move += 0.01;
+					x_move += (-1 * SPEED / 5) * dir;
 				}
-				x_pos += 0.01;
-			}
-
-			if (y_pos < -1) {
-				delete_plane = true;
+				if (y_pos < -1) {
+					delete_plane = true;
+				}
 			}
 		}
 		draw();
@@ -344,6 +347,9 @@ public:
 				}
 			}
 		}
+		std::vector<float>().swap(x);
+		std::vector<float>().swap(y);
+
 		if (slice_num == 2 || slice_num == 3 || slice_num == 4) {
 			return true;
 		}
@@ -443,7 +449,9 @@ public:
 		}
 		slice_num = 0;
 		state = EL_x.size();
-		dir *= -1;
+		if(dir == -1)
+			dir *= -1;
+		slice_state = true;
 		re_initBuffer();
 
 		for (int i = 0; i < EL_temp_x.size(); ++i) {
@@ -468,11 +476,39 @@ public:
 		}
 		temp.slice_num = 0;
 		temp.state = EL_temp_x.size();
+		if (temp.dir == 1)
+			temp.dir *= -1;
+		temp.slice_state = true;
+		std::vector<float>().swap(x);
+		std::vector<float>().swap(y);
+		std::vector<float>().swap(EL_x);
+		std::vector<float>().swap(EL_y);
+		std::vector<float>().swap(EL_temp_x);
+		std::vector<float>().swap(EL_temp_y);
+		
 		return temp;
 	}
 
-	void show() {
-		std::cout << "slice_num: " << slice_num << std::endl;
+	void basket_Check(const PLANE& bas) {
+		if (slice_state == false) return;
+		float max_x = -100, min_x = 100, max_y = -100, min_y = 100;
+		for (int i = 0; i < state; ++i) {
+			if (max_x < p[i][0] + x_move)
+				max_x = p[i][0] + x_move;
+			if (min_x > p[i][0] + x_move)
+				min_x = p[i][0] + x_move;
+			if (max_y < p[i][1] + y_move)
+				max_y = p[i][1] + y_move;
+			if (min_y > p[i][1] + y_move)
+				min_y = p[i][1] + y_move;
+		}
+
+		if (max_x < bas.p[0][0] + bas.x_move) return;
+		if (min_x > bas.p[1][0] + bas.x_move) return;
+		if (max_y < bas.p[0][1] + bas.y_move) return;
+		if (min_y > bas.p[2][1] + bas.y_move) return;
+		basket_ok = true;
+
 	}
 };
 
@@ -529,11 +565,19 @@ GLvoid Timer_event(int value) {
 			if (manage.size() < 1000) {
 				p.re_init();
 				manage.push_back(p);
-				std::cout << manage.size() - 1 << std::endl;
+				std::cout << "객체 생성" << std::endl;
 			}
 		}
 	}
 	draw_count++;
+	std::cout << draw_count << std::endl;
+	for (int i = 0; i < manage.size(); ++i) {
+		if (manage.at(i).get_delete()) {
+			manage.erase(manage.begin() + i);
+			std::cout << "삭제" << std::endl;
+			i--;
+		}
+	}
 	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
 	glutTimerFunc(100, Timer_event, 4);
 }
@@ -548,12 +592,7 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glBindVertexArray(vao);
 	//--- 삼각형 그리기
 	for (int i = 0; i < manage.size(); ++i) {
-		manage.at(i).update();
-		if (manage.at(i).get_delete()) {
-			manage.erase(manage.begin() + i);
-			std::cout << "삭제" << std::endl;
-			i--;
-		}
+		manage.at(i).update(manage.at(0));
 	}
 
 	if (click) {
@@ -683,9 +722,16 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 	case 'F':
 		Isline = false;
 		break;
+	case '+':
+		if(SPEED <= 0.2)
+			SPEED += 0.005;
+		break;
+	case '-':
+		if(SPEED >= 0.03)
+			SPEED -= 0.005;
+		break;
 
 	}
-	glutPostRedisplay(); //--- 배경색이 바뀔 때마다 출력 콜백 함수를 호출하여 화면을 refresh 한다
 }
 
 
