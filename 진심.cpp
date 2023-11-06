@@ -66,6 +66,7 @@ class PLANE {
 	int slice_num;
 	int dir;
 	int state;
+	int basket_count;
 
 	bool delete_plane;
 	bool basket;
@@ -97,6 +98,7 @@ public:
 	}
 
 	GLvoid re_init() {
+		basket_count = 0;
 		basket_ok = false;
 		slice_state = false;
 		x_move = 0;
@@ -107,7 +109,7 @@ public:
 		for (int i = 0; i < 3; ++i) {
 			color[i] = urd_color(dre);
 		}
-		state = 6;//uid(dre);
+		state = uid(dre);
 		p[0][1] = urd(dre);
 		int n = uid(dre);
 		if (n % 2 == 0) {
@@ -323,6 +325,8 @@ public:
 				else {
 					x_move -= 0.05;
 				}
+				basket_count++;
+				if (basket_count >= 50) delete_plane = true;
 			}
 			else {
 				basket_Check(bas);
@@ -347,6 +351,7 @@ public:
 	bool get_delete() { return delete_plane; }
 
 	bool crash_check() {
+		if (basket_ok) return false;
 		std::vector<float> x;
 		std::vector<float> y;
 		float ly;
@@ -375,7 +380,7 @@ public:
 				float min = std::min(line[0][0], line[1][0]);
 				if (x1 >= min && x1 <= max) {
 					if (line[1][0] >= line[0][0] - 0.01 && line[1][0] <= line[0][0] + 0.01) {
-						line[0][0] += 0.001;
+						line[0][0] += 0.05;
 					}
 					ly = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]) * (x1 - line[0][0]) + line[0][1];
 					if (ly >= y1 - 0.01 && ly <= y1 + 0.01) {
