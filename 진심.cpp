@@ -47,6 +47,11 @@ float SPEED = 0.05;
 bool line_draw = false;
 float rad = 0;
 bool rot = false;
+bool m_check = false;
+bool m_button = false;
+float my_route[5][2]{};
+int my_route_count = 0;
+
 class PLANE {
 	GLfloat p[20][3];
 	GLfloat color[3];
@@ -73,8 +78,14 @@ class PLANE {
 	bool basket;
 	bool slice_state;
 	bool basket_ok;
+
+	bool my_rt;
+	GLfloat route[7][3];
+	int rt_count;
+	float rt_count_line;
 public:
 	PLANE() {}
+
 	PLANE(int i) {
 		p[0][0] = -0.3;
 		p[0][1] = -0.8;
@@ -99,6 +110,8 @@ public:
 	}
 
 	GLvoid re_init() {
+		rt_count = 0;
+		rt_count_line = 0;
 		basket_count = 0;
 		basket_ok = false;
 		slice_state = false;
@@ -121,7 +134,9 @@ public:
 			p[0][0] = -START;
 			dir = -1;
 		}
-		std::cout << p[0][0] << "에서 생성" << std::endl;
+		my_rt = false;
+	
+		
 		switch (state) {
 		case 3:
 			p[1][0] = p[0][0] + 0.2;
@@ -184,6 +199,26 @@ public:
 			line_route[i + 1][0] = line_route[i][0] - (SPEED * 5) * dir;
 			line_route[i + 1][1] = line_route[i][1] - SPEED * 2.5;
 		}
+		if (m_check) {
+			my_rt = true;
+			for (int i = 0; i < 5; ++i) {
+				for (int j = 0; j < 2; ++j) {
+					route[i + 1][j] = my_route[i][j];
+				}
+			}
+			route[0][0] = p[0][0];
+			route[0][1] = p[0][1];
+			route[6][0] = route[5][0] + 2.4;
+			route[6][1] = route[5][1];
+			m_check = false;
+			for (int i = 0; i < 3; ++i) {
+				color[i] = 0;
+			}
+			for (int i = 0; i < 5; ++i) {
+				my_route[i][0] = '\0';
+				my_route[i][1] = '\0';
+			}
+		}
 		initBuffer();
 	}
 
@@ -209,8 +244,11 @@ public:
 
 		glGenBuffers(2, line_vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(line_route), line_route, GL_STATIC_DRAW);
-
+		if(my_rt)
+			glBufferData(GL_ARRAY_BUFFER, sizeof(route), route, GL_STATIC_DRAW);
+		else {
+			glBufferData(GL_ARRAY_BUFFER, sizeof(line_route), line_route, GL_STATIC_DRAW);
+		}
 		lineAttribute = glGetAttribLocation(shaderProgramID, "positionAttribute");
 		glBindBuffer(GL_ARRAY_BUFFER, line_vbo[0]);
 		glVertexAttribPointer(lineAttribute, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -274,8 +312,10 @@ public:
 			glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 			glEnableVertexAttribArray(PosLocation);
 			Transform2();
-
-			glDrawArrays(GL_LINE_STRIP, 0, 10);
+			if(my_rt)
+				glDrawArrays(GL_LINE_STRIP, 0, 7);
+			else
+				glDrawArrays(GL_LINE_STRIP, 0, 10);
 		}
 		PosLocation = glGetAttribLocation(shaderProgramID, "positionAttribute"); //	: 0  Shader의 'layout (location = 0)' 부분
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // VBO Bind
@@ -336,6 +376,43 @@ public:
 				x_move -= 0.05;
 			}
 		}
+		else if (my_rt) {
+			if (basket_ok) {
+				if (bas.dir >= 1) {
+					x_move += 0.05;
+				}
+				else {
+					x_move -= 0.05;
+				}
+				basket_count++;
+				if (basket_count >= 50) delete_plane = true;
+			}
+			else {
+				basket_Check(bas);
+				switch (rt_count) {
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+					x_move = (1 - rt_count_line) * route[rt_count][0] + rt_count_line * route[rt_count + 1][0] - route[0][0];
+					y_move = (1 - rt_count_line) * route[rt_count][1] + rt_count_line * route[rt_count + 1][1] - route[0][1];
+					rt_count_line += 0.05;
+					std::cout << x_move << std::endl;
+					if (rt_count_line >= 1) {
+						rt_count += 1;
+						rt_count_line = 0;
+					}
+					break;
+				case 5:
+					x_move += 0.05;
+					if (x_move + p[0][0] >= 1.2) {
+						delete_plane = true;
+					}
+					break;
+				}
+			}
+		}
 		else {
 			if (basket_ok) {
 				if (bas.dir >= 1) {
@@ -371,6 +448,7 @@ public:
 
 	bool crash_check() {
 		if (basket_ok) return false;
+		if (state > 19) return false;
 		std::vector<float> x;
 		std::vector<float> y;
 		float ly;
@@ -423,6 +501,7 @@ public:
 		std::vector<float>().swap(y);
 
 		if (slice_num == 2 || slice_num == 3 || slice_num == 4) {
+			my_rt = false;
 			return true;
 		}
 		slice_num = 0;
@@ -580,7 +659,6 @@ public:
 		if (max_y < bas.p[0][1] + bas.y_move) return;
 		if (min_y > bas.p[2][1] + bas.y_move) return;
 		basket_ok = true;
-
 	}
 };
 
@@ -625,7 +703,6 @@ float start_y;
 float end_x;
 float end_y;
 bool click = false;
-
 GLvoid Timer_event(int value) {
 	rad+=10;
 
@@ -639,16 +716,13 @@ GLvoid Timer_event(int value) {
 			if (manage.size() < 1000) {
 				p.re_init();
 				manage.push_back(p);
-				std::cout << "객체 생성" << std::endl;
 			}
 		}
 	}
 	draw_count++;
-	std::cout << draw_count << std::endl;
 	for (int i = 0; i < manage.size(); ++i) {
 		if (manage.at(i).get_delete()) {
 			manage.erase(manage.begin() + i);
-			std::cout << "삭제" << std::endl;
 			i--;
 		}
 	}
@@ -690,10 +764,22 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 GLvoid Mouse_Click(int button, int state, int x, int y) {
 	ConvertXY_OPENGL(x, y);
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		start_x = ox;
-		start_y = oy;
+		if (m_button) {
+			my_route[my_route_count][0] = ox;
+			my_route[my_route_count][1] = oy;
+			my_route_count++;
+
+			if (my_route_count >= 5) {
+				m_button = false;
+				my_route_count = 0;
+				m_check = true;
+			}
+			
+		}
 		end_x = ox;
 		end_y = oy;
+		start_x = ox;
+		start_y = oy;
 		click = true;
 		line[0][0] = start_x;
 		line[0][1] = start_y;
@@ -817,6 +903,11 @@ GLvoid Keyboard(unsigned char key, int x, int y) {
 			rot = false;
 		else
 			rot = true;
+		break;
+	case 'm':
+	case 'M':
+		if(!m_button)
+			m_button = true;
 		break;
 	case 'q':
 	case 'Q':
