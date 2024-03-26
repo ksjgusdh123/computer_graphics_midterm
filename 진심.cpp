@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <gl/glew.h> // 필요한 헤더파일 include
-#include <gl/freeglut.h>
-#include <gl/freeglut_ext.h>
 #include <random>
 #include <vector>
 #include <math.h>
-#include <gl\glm\glm\glm.hpp>
-#include <gl/glm/glm/ext.hpp>
-#include <gl/glm/glm/gtc/matrix_transform.hpp>
+#include <gl/glew.h>
+#include <gl/freeglut.h>
+#include <gl/freeglut_ext.h>
+#include <gl/glm/glm.hpp>
+#include <gl/glm/ext.hpp>
+#include <gl/glm/gtc/matrix_transform.hpp>
 char* filetobuf(const char* file);
 void make_vertexShaders();
 void make_fragmentShaders();
